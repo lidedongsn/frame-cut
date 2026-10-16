@@ -1,0 +1,40 @@
+import AVFoundation
+import FCCore
+import Foundation
+
+/// 主轨原声（不含音乐，已应用音量 / 静音 / 变速）→ 16kHz 单声道 Float，时间与时间线一致。
+public enum AudioExtractor {
+    public static let sampleRate = 16_000
+
+    public static func mainTrackSamples(project: Project) async throws -> [Float] {
+        let built = try await CompositionBuilder.build(project: project, renderSize: CGSize(width: 64, height: 64), includeMusic: false)
+        let tracks = try await built.composition.loadTracks(withMediaType: .audio)
+        guard !tracks.isEmpty else { return [] }
+
+        let reader = try AVAssetReader(asset: built.composition)
+        reader.timeRange = CMTimeRange(start: .zero, duration: built.duration.cmTime)
+        let output = AVAssetReaderAudioMixOutput(audioTracks: tracks, audioSettings: [
+            AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 32, AVLinearPCMIsFloatKey: true, AVLinearPCMIsNonInterleaved: false,
+        ])
+        output.audioMix = built.makeAudioMix(project: project)
+        output.audioTimePitchAlgorithm = .spectral
+        reader.add(output)
+        guard reader.startReading() else { throw reader.error ?? ExportError.failed("无法读取音频") }
+
+        var samples: [Float] = []
+        samples.reserveCapacity(Int(built.duration.seconds * Double(sampleRate)) + sampleRate)
+        while let buffer = output.copyNextSampleBuffer() {
+            try Task.checkCancellation()
+            guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+            var length = 0
+            var pointer: UnsafeMutablePointer<Int8>?
+            guard CMBlockBufferGetDataPointer(block, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length,
+                                              dataPointerOut: &pointer) == kCMBlockBufferNoErr, let pointer else { continue }
+            let count = length / MemoryLayout<Float>.size
+            pointer.withMemoryRebound(to: Float.self, capacity: count) { samples.append(contentsOf: UnsafeBufferPointer(start: $0, count: count)) }
+        }
+        if reader.status == .failed { throw reader.error ?? ExportError.failed("读取音频失败") }
+        return samples
+    }
+}
