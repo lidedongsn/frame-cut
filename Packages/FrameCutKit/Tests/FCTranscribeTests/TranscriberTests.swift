@@ -39,3 +39,33 @@ final class TranscriberTests: XCTestCase {
         XCTAssertTrue(text.contains("海边"), text)
     }
 }
+
+final class SubtitleSplitTests: XCTestCase {
+    func testSplitsAtPunctuationProportionally() {
+        let seg = TranscriptSegment(start: .zero, end: Time(seconds: 5), text: "大家好,今天我们去海边玩,天气非常好。")
+        let lines = SubtitleSplitter.split(seg)
+        XCTAssertEqual(lines.map(\.text), ["大家好", "今天我们去海边玩", "天气非常好"])
+        XCTAssertEqual(lines.first?.start, .zero)
+        XCTAssertEqual(lines.last?.end, Time(seconds: 5))
+        // 时间按字数分配：3 / 8 / 5 字
+        XCTAssertEqual(lines[1].start.seconds, 5.0 * 3 / 16, accuracy: 0.01)
+        for (a, b) in zip(lines, lines.dropFirst()) { XCTAssertEqual(a.end, b.start) }
+    }
+
+    func testShortSegmentKeptWhole() {
+        let seg = TranscriptSegment(start: Time(seconds: 1), end: Time(seconds: 2), text: "你好。")
+        XCTAssertEqual(SubtitleSplitter.split(seg), [TranscriptSegment(start: Time(seconds: 1), end: Time(seconds: 2), text: "你好")])
+    }
+
+    func testLongClauseWithoutPunctuationSplitByLength() {
+        let text = String(repeating: "很", count: 40)
+        let lines = SubtitleSplitter.split(TranscriptSegment(start: .zero, end: Time(seconds: 8), text: text))
+        XCTAssertTrue(lines.allSatisfy { $0.text.count <= SubtitleSplitter.maxCharacters })
+        XCTAssertEqual(lines.map(\.text).joined(), text)
+    }
+
+    func testEnglishKeepsInnerSpaces() {
+        let lines = SubtitleSplitter.split(TranscriptSegment(start: .zero, end: Time(seconds: 2), text: "Hello world, nice day."))
+        XCTAssertEqual(lines.map(\.text), ["Hello world", "nice day"])
+    }
+}

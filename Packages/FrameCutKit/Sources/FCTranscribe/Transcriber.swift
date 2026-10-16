@@ -70,42 +70,58 @@ public actor WhisperKitTranscriber: Transcriber {
             let text = Self.clean(seg.text)
             guard !text.isEmpty, seg.end > seg.start else { return nil }
             return TranscriptSegment(start: Time(seconds: Double(seg.start)), end: Time(seconds: Double(seg.end)), text: text)
-        }.sorted { $0.start < $1.start }
-    }
-
-    private func loadPipeline(progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> WhisperKit {
-        if let pipe { return pipe }
-        let folder: URL
-        if Self.isModelDownloaded {
-            folder = Self.expectedModelFolder
-        } else {
-            try FileManager.default.createDirectory(at: Self.modelsDirectory, withIntermediateDirectories: true)
-            progress(.downloading(0))
-            folder = try await Self.download(progress: progress)
-        }
-        progress(.loading)
-        let config = WhisperKitConfig(modelFolder: folder.path, verbose: false, logLevel: .error,
-                                      prewarm: true, load: true, download: false)
-        let pipe = try await WhisperKit(config)
-        self.pipe = pipe
-        return pipe
+        }.flatMap(SubtitleSplitter.split).sorted { $0.start < $1.start }
     }
 
     /// 官方源不可达时（如国内网络）依次尝试镜像。
     static let endpoints = ["https://huggingface.co", "https://hf-mirror.com"]
 
-    private static func download(progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> URL {
+    /// 依次尝试各下载源；模型与分词器从同一个可用源获取，已下载的不会重复下载。
+    private func loadPipeline(progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> WhisperKit {
+        if let pipe { return pipe }
+        try FileManager.default.createDirectory(at: Self.modelsDirectory, withIntermediateDirectories: true)
         var lastError: Error?
-        for endpoint in endpoints {
+        for endpoint in Self.endpoints {
             do {
-                return try await WhisperKit.download(variant: modelVariant, downloadBase: modelsDirectory, endpoint: endpoint) { p in
-                    progress(.downloading(p.fractionCompleted))
+                let folder: URL
+                if Self.isModelDownloaded {
+                    folder = Self.expectedModelFolder
+                } else {
+                    progress(.downloading(0))
+                    folder = try await WhisperKit.download(variant: Self.modelVariant, downloadBase: Self.modelsDirectory,
+                                                           endpoint: endpoint) { p in
+                        progress(.downloading(p.fractionCompleted))
+                    }
                 }
+                try await Self.ensureTokenizer(endpoint: endpoint)
+                progress(.loading)
+                let config = WhisperKitConfig(modelEndpoint: endpoint, modelFolder: folder.path, tokenizerFolder: Self.modelsDirectory,
+                                              verbose: false, logLevel: .error, prewarm: true, load: true, download: false)
+                let pipe = try await WhisperKit(config)
+                self.pipe = pipe
+                return pipe
             } catch {
                 lastError = error
             }
         }
         throw lastError ?? TranscribeError.downloadFailed
+    }
+
+    static let tokenizerRepo = "openai/whisper-small"
+
+    /// WhisperKit 的分词器下载固定走官方源，这里先从可用源下载到它会优先读取的本地目录。
+    static func ensureTokenizer(endpoint: String) async throws {
+        let folder = modelsDirectory.appendingPathComponent("models/\(tokenizerRepo)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for name in ["tokenizer.json", "tokenizer_config.json"] {
+            let dest = folder.appendingPathComponent(name)
+            if FileManager.default.fileExists(atPath: dest.path) { continue }
+            let url = URL(string: "\(endpoint)/\(tokenizerRepo)/resolve/main/\(name)")!
+            let (tmp, response) = try await URLSession.shared.download(from: url)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw TranscribeError.downloadFailed }
+            try? FileManager.default.removeItem(at: dest)
+            try FileManager.default.moveItem(at: tmp, to: dest)
+        }
     }
 
     /// 去掉特殊标记与多余空白，繁体转简体。
