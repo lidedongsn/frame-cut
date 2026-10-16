@@ -5,7 +5,7 @@ import Foundation
 ///
 /// 亮度以“相对参考白”的线性值表示（Core Image 约定 1.0 = 203 尼特，BT.2408）。
 /// knee 以下保持不变；以上用有理函数平滑压缩，峰值 1000 尼特映射到 1.0，并保证在 knee 处斜率连续。
-/// 按 RGB 最大分量计算缩放比例，保持色相。
+/// 逐通道映射：LUT 三线性插值精确、严格单调；极亮的饱和色会自然去饱和（与胶片 / ACES 类映射观感一致）。
 enum ToneMap {
     static let knee = 0.7
     static let peak = 1000.0 / 203.0
@@ -22,10 +22,10 @@ enum ToneMap {
         return knee + (1 - knee) * (t * (1 + a) / (t + a))
     }
 
-    static let dimension = 65
+    static let dimension = 64 // CIColorCube 最大支持 64
     private static let pqSpace = CGColorSpace(name: CGColorSpace.itur_2100_PQ)!
 
-    /// PQ 编码空间（覆盖 0–10000 尼特）中的 3D LUT。
+    /// PQ 编码空间（覆盖 0–10000 尼特）中的 3D LUT（64³）。
     static let lut: Data = {
         let n = dimension
         var values = [Float](repeating: 0, count: n * n * n * 4)
@@ -33,10 +33,10 @@ enum ToneMap {
         for b in 0..<n {
             for g in 0..<n {
                 for r in 0..<n {
-                    let rgb = [r, g, b].map { PQ.decode(Double($0) / Double(n - 1)) / 203.0 }
-                    let m = rgb.max() ?? 0
-                    let scale = m > knee ? map(m) / m : 1
-                    for (k, v) in rgb.enumerated() { values[i + k] = Float(PQ.encode(v * scale * 203.0)) }
+                    for (k, c) in [r, g, b].enumerated() {
+                        let x = PQ.decode(Double(c) / Double(n - 1)) / 203.0
+                        values[i + k] = Float(PQ.encode(map(x) * 203.0))
+                    }
                     values[i + 3] = 1
                     i += 4
                 }

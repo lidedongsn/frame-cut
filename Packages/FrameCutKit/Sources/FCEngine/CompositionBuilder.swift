@@ -47,7 +47,7 @@ public final class BuiltComposition: @unchecked Sendable {
 
     // MARK: 视频合成指令
 
-    public func makeVideoComposition(project: Project, renderSize: CGSize) -> AVMutableVideoComposition {
+    public func makeVideoComposition(project: Project, renderSize: CGSize, output: DynamicRangeOutput = .sdr) -> AVMutableVideoComposition {
         let layout = TimelineLayout(project: project)
         let scene = RenderScene(subtitles: project.subtitles, style: project.subtitleStyle)
         let total = Time.max(Time(composition.duration), layout.duration)
@@ -70,10 +70,11 @@ public final class BuiltComposition: @unchecked Sendable {
                 guard let clip = project.mainClip(id: placement.clipID), let asset = project.asset(id: clip.assetID) else { continue }
                 if asset.kind == .image {
                     layers.append(LayerSpec(source: .image(asset.url), naturalSize: CGSize(width: asset.width, height: asset.height),
-                                            preferredTransform: .identity, transform: clip.transform, filter: clip.filter))
+                                            preferredTransform: .identity, transform: clip.transform, filter: clip.filter, isHDR: false))
                 } else if let src = videoSources[clip.id] {
                     layers.append(LayerSpec(source: .track(src.trackID), naturalSize: src.naturalSize,
-                                            preferredTransform: src.preferredTransform, transform: clip.transform, filter: clip.filter))
+                                            preferredTransform: src.preferredTransform, transform: clip.transform, filter: clip.filter,
+                                            isHDR: asset.hdr != nil))
                     trackIDs.append(src.trackID)
                 }
             }
@@ -82,11 +83,14 @@ public final class BuiltComposition: @unchecked Sendable {
                 transition = (t.kind, active[1].start, t.duration)
             }
             let range = CMTimeRange(start: a.cmTime, end: b.cmTime)
-            instructions.append(RenderInstruction(timeRange: range, layers: layers, transition: transition, scene: scene, trackIDs: trackIDs))
+            instructions.append(RenderInstruction(timeRange: range, layers: layers, transition: transition, scene: scene, trackIDs: trackIDs,
+                                                  output: output, colorMode: project.colorMode))
         }
 
         let vc = AVMutableVideoComposition()
-        vc.customVideoCompositorClass = CompositorBridge.self
+        // 不设置 vc 的色彩属性：设置后 AVFoundation 会把源帧改标为目标色彩空间却不转换数值（如 HLG 被当作 PQ）。
+        // 源帧保留原始标记，由合成器统一做色彩转换，并在输出缓冲上标记目标色彩空间。
+        vc.customVideoCompositorClass = output.isHDR ? HDRCompositor.self : SDRCompositor.self
         vc.renderSize = renderSize
         vc.frameDuration = CMTime(value: 1, timescale: CMTimeScale(max(1, project.frameRate)))
         vc.instructions = instructions

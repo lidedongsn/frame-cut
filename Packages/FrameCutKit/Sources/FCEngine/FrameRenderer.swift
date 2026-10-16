@@ -10,7 +10,6 @@ final class FrameRenderer: @unchecked Sendable {
 
     let context: CIContext
     private let imageCache = NSCache<NSString, CIImage>()
-    private let outputColorSpace = CGColorSpace(name: CGColorSpace.itur_709)!
 
     /// 半精度浮点 + 扩展线性工作空间：1.0 = 203 尼特参考白，HDR 高光可超过 1.0。
     static let contextOptions: [CIContextOption: Any] = [
@@ -39,7 +38,11 @@ final class FrameRenderer: @unchecked Sendable {
         let frame = composeFrame(instruction: instruction, time: time, canvas: canvas) { id in
             request.sourceFrame(byTrackID: id)
         }
-        context.render(frame, to: output, bounds: CGRect(origin: .zero, size: canvas), colorSpace: outputColorSpace)
+        let target = instruction.output
+        CVBufferSetAttachment(output, kCVImageBufferColorPrimariesKey, target.colorPrimaries as CFString, .shouldPropagate)
+        CVBufferSetAttachment(output, kCVImageBufferTransferFunctionKey, target.transferFunction as CFString, .shouldPropagate)
+        CVBufferSetAttachment(output, kCVImageBufferYCbCrMatrixKey, target.yCbCrMatrix as CFString, .shouldPropagate)
+        context.render(frame, to: output, bounds: CGRect(origin: .zero, size: canvas), colorSpace: target.colorSpace)
         return output
     }
 
@@ -47,9 +50,13 @@ final class FrameRenderer: @unchecked Sendable {
                       source: (CMPersistentTrackID) -> CVPixelBuffer?) -> CIImage {
         let rect = CGRect(origin: .zero, size: canvas)
         let black = CIImage(color: .black).cropped(to: rect)
+        let hdrProject = instruction.colorMode == .hdr
+        let grading: GradingSpace = hdrProject ? .hlg : .sdr
         let layers: [CIImage] = instruction.layers.map { layer in
-            guard let image = sourceImage(layer, source: source) else { return black }
-            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: .sdr).cropped(to: rect).composited(over: black)
+            guard var image = sourceImage(layer, source: source) else { return black }
+            // SDR 工程中的 HDR 素材：先色调映射，再按 SDR 调色
+            if !hdrProject && layer.isHDR { image = ToneMap.apply(image) }
+            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: grading).cropped(to: rect).composited(over: black)
         }
         var frame: CIImage
         if let t = instruction.transition, layers.count == 2, t.duration > .zero {
@@ -58,6 +65,8 @@ final class FrameRenderer: @unchecked Sendable {
         } else {
             frame = layers.last ?? black
         }
+        // HDR 工程输出 SDR：整帧色调映射（字幕在参考白以内，之后叠加）
+        if hdrProject && !instruction.output.isHDR { frame = ToneMap.apply(frame) }
         for sub in instruction.scene.activeSubtitles(at: time) {
             guard let text = SubtitleRenderer.image(text: sub.text, style: instruction.scene.style, canvas: canvas) else { continue }
             let cx = (canvas.width - text.extent.width) / 2

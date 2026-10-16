@@ -1,6 +1,7 @@
 import AVFoundation
 import FCCore
 import Foundation
+import VideoToolbox
 
 public struct ExportSettings: Equatable, Sendable {
     public enum Codec: String, CaseIterable, Sendable {
@@ -12,16 +13,21 @@ public struct ExportSettings: Equatable, Sendable {
     public var shortSide: Int
     public var frameRate: Int
     public var codec: Codec
+    public var dynamicRange: DynamicRangeOutput
 
-    public init(shortSide: Int = 1080, frameRate: Int = 30, codec: Codec = .h264) {
+    public init(shortSide: Int = 1080, frameRate: Int = 30, codec: Codec = .h264, dynamicRange: DynamicRangeOutput = .sdr) {
         self.shortSide = shortSide
         self.frameRate = frameRate
         self.codec = codec
+        self.dynamicRange = dynamicRange
     }
+
+    /// HDR 只能用 HEVC（Main10）。
+    public var effectiveCodec: Codec { dynamicRange.isHDR ? .hevc : codec }
 
     /// 按像素数 × 帧率估算码率（bit/s）。
     public func bitrate(for size: CGSize) -> Int {
-        let bitsPerPixel = codec == .h264 ? 0.2 : 0.12
+        let bitsPerPixel = effectiveCodec == .h264 ? 0.2 : (dynamicRange.isHDR ? 0.15 : 0.12)
         return Int(Double(size.width * size.height) * Double(frameRate) * bitsPerPixel)
     }
 }
@@ -54,10 +60,13 @@ public final class Exporter: @unchecked Sendable {
         reader.timeRange = CMTimeRange(start: .zero, duration: built.duration.cmTime)
 
         let videoTracks = try await composition.loadTracks(withMediaType: .video)
+        let range = settings.dynamicRange
+        // 显式指定输出色彩属性，否则读取端会把合成结果转换到别的色彩空间
         let videoOutput = AVAssetReaderVideoCompositionOutput(videoTracks: videoTracks, videoSettings: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferPixelFormatTypeKey as String: range.isHDR ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange : kCVPixelFormatType_32BGRA,
+            AVVideoColorPropertiesKey: range.colorProperties,
         ])
-        videoOutput.videoComposition = built.makeVideoComposition(project: project, renderSize: size)
+        videoOutput.videoComposition = built.makeVideoComposition(project: project, renderSize: size, output: range)
         videoOutput.alwaysCopiesSampleData = false
         reader.add(videoOutput)
 
@@ -76,23 +85,13 @@ public final class Exporter: @unchecked Sendable {
             audioOutput = out
         }
 
-        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let writer = try AVAssetWriter(outputURL: url, fileType: url.pathExtension.lowercased() == "mov" ? .mov : .mp4)
         writer.shouldOptimizeForNetworkUse = true
-        let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            AVVideoCodecKey: settings.codec == .h264 ? AVVideoCodecType.h264 : AVVideoCodecType.hevc,
-            AVVideoWidthKey: Int(size.width),
-            AVVideoHeightKey: Int(size.height),
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: settings.bitrate(for: size),
-                AVVideoExpectedSourceFrameRateKey: settings.frameRate,
-                AVVideoMaxKeyFrameIntervalKey: settings.frameRate * 2,
-            ],
-            AVVideoColorPropertiesKey: [
-                AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
-                AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
-                AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2,
-            ],
-        ])
+        let videoSettings = Self.videoSettings(settings, size: size)
+        guard writer.canApply(outputSettings: videoSettings, forMediaType: .video) else {
+            throw ExportError.failed("编码器不支持当前设置")
+        }
+        let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
         videoInput.expectsMediaDataInRealTime = false
         writer.add(videoInput)
         var audioInput: AVAssetWriterInput?
@@ -125,6 +124,56 @@ public final class Exporter: @unchecked Sendable {
         }
         progress(1)
     }
+
+    static func videoSettings(_ settings: ExportSettings, size: CGSize) -> [String: Any] {
+        let range = settings.dynamicRange
+        var compression: [String: Any] = [
+            AVVideoAverageBitRateKey: settings.bitrate(for: size),
+            AVVideoExpectedSourceFrameRateKey: settings.frameRate,
+            AVVideoMaxKeyFrameIntervalKey: settings.frameRate * 2,
+        ]
+        if range.isHDR {
+            compression[AVVideoProfileLevelKey] = kVTProfileLevel_HEVC_Main10_AutoLevel as String
+            // 由编码器按输出色彩空间自动写入 HDR 元数据（如杜比视界 / HDR10）
+            compression[kVTCompressionPropertyKey_HDRMetadataInsertionMode as String] = kVTHDRMetadataInsertionMode_Auto as String
+        }
+        if range == .pq {
+            compression[kVTCompressionPropertyKey_MasteringDisplayColorVolume as String] = HDR10Metadata.masteringDisplay
+            compression[kVTCompressionPropertyKey_ContentLightLevelInfo as String] = HDR10Metadata.contentLightLevel
+        }
+        return [
+            AVVideoCodecKey: settings.effectiveCodec == .h264 ? AVVideoCodecType.h264 : AVVideoCodecType.hevc,
+            AVVideoWidthKey: Int(size.width),
+            AVVideoHeightKey: Int(size.height),
+            AVVideoCompressionPropertiesKey: compression,
+            AVVideoColorPropertiesKey: range.colorProperties,
+        ]
+    }
+}
+
+/// HDR10 静态元数据（SMPTE ST 2086 / CTA-861.3，大端序）：P3-D65 母版、1000 尼特。
+enum HDR10Metadata {
+    static let masteringDisplay: Data = {
+        var d = Data()
+        func u16(_ v: Double) { d.append(contentsOf: withUnsafeBytes(of: UInt16(v.rounded()).bigEndian, Array.init)) }
+        func u32(_ v: Double) { d.append(contentsOf: withUnsafeBytes(of: UInt32(v.rounded()).bigEndian, Array.init)) }
+        // 顺序：G、B、R 原色，白点（单位 0.00002）；最大 / 最小亮度（单位 0.0001 尼特）
+        for (x, y) in [(0.265, 0.690), (0.150, 0.060), (0.680, 0.320), (0.3127, 0.3290)] {
+            u16(x / 0.00002)
+            u16(y / 0.00002)
+        }
+        u32(1000 / 0.0001)
+        u32(0.0001 / 0.0001)
+        return d
+    }()
+
+    /// MaxCLL 1000、MaxFALL 400。
+    static let contentLightLevel: Data = {
+        var d = Data()
+        d.append(contentsOf: withUnsafeBytes(of: UInt16(1000).bigEndian, Array.init))
+        d.append(contentsOf: withUnsafeBytes(of: UInt16(400).bigEndian, Array.init))
+        return d
+    }()
 }
 
 /// 两路（画面、声音）并行搬运样本。

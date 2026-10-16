@@ -11,7 +11,7 @@ enum Fixtures {
         p.aspect = aspect
         for f in files {
             let asset = try await MediaProbe.probe(url: TestMedia.url(f))
-            if !p.assets.contains(where: { $0.path == asset.path }) { p.assets.append(asset) }
+            if !p.assets.contains(where: { $0.path == asset.path }) { p.addAssets([asset]) }
             let id = p.assets.first { $0.path == asset.path }!.id
             p.appendToMain(assetID: id)
         }
