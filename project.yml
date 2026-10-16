@@ -1,0 +1,57 @@
+name: FrameCut
+options:
+  bundleIdPrefix: com.lidedongsn
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  FrameCutKit:
+    path: Packages/FrameCutKit
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ARCHS: arm64
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  FrameCut:
+    type: application
+    platform: macOS
+    sources: [App]
+    dependencies:
+      - package: FrameCutKit
+        product: FCCore
+      - package: FrameCutKit
+        product: FCMedia
+      - package: FrameCutKit
+        product: FCEngine
+      - package: FrameCutKit
+        product: FCTranscribe
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: FrameCut
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "14.0"
+        LSApplicationCategoryType: public.app-category.video
+        NSHumanReadableCopyright: ""
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: FrameCut Project
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes: [com.lidedongsn.framecut.project]
+            LSTypeIsPackage: true
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.lidedongsn.framecut.project
+            UTTypeDescription: FrameCut 工程
+            UTTypeConformsTo: [com.apple.package, public.composite-content]
+            UTTypeTagSpecification:
+              public.filename-extension: [framecut]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lidedongsn.framecut
+        ENABLE_HARDENED_RUNTIME: NO
+        COMBINE_HIDPI_IMAGES: YES
