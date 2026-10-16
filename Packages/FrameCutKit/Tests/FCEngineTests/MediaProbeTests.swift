@@ -54,4 +54,19 @@ final class MediaProbeTests: XCTestCase {
         XCTAssertNotNil(img)
         XCTAssertLessThanOrEqual(img!.height, 120)
     }
+
+    func testProbeHLG() async throws {
+        let a = try await MediaProbe.probe(url: TestMedia.url("hlg_bands_2s.mov"))
+        XCTAssertEqual(a.hdr, .hlg)
+    }
+
+    func testProbePQ() async throws {
+        let a = try await MediaProbe.probe(url: TestMedia.url("pq_bands_2s.mov"))
+        XCTAssertEqual(a.hdr, .pq)
+    }
+
+    func testProbeSDRHasNoHDR() async throws {
+        let a = try await MediaProbe.probe(url: TestMedia.url("landscape_10s.mp4"))
+        XCTAssertNil(a.hdr)
+    }
 }

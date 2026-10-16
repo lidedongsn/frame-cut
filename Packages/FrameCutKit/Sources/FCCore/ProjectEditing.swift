@@ -177,6 +177,22 @@ extension Project {
 
     // MARK: 素材
 
+    public var hasHDRAssets: Bool { assets.contains { $0.hdr != nil } }
+
+    /// 追加素材（按 id 去重）；自动模式下遇到 HDR 素材切到 HDR 工程。
+    public mutating func addAssets(_ newAssets: [MediaAsset]) {
+        for asset in newAssets where !assets.contains(where: { $0.id == asset.id }) {
+            assets.append(asset)
+        }
+        if colorModeIsAutomatic, hasHDRAssets { colorMode = .hdr }
+    }
+
+    /// 用户手动设置色彩模式，之后不再自动切换。
+    public mutating func setColorMode(_ mode: ColorMode) {
+        colorMode = mode
+        colorModeIsAutomatic = false
+    }
+
     public func missingAssets(fileExists: (String) -> Bool) -> [MediaAsset] {
         assets.filter { !fileExists($0.path) }
     }

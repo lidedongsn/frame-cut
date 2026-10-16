@@ -27,6 +27,13 @@ public enum AspectRatio: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// 工程色彩模式。HDR 工程以 HDR 预览与导出（也可导出 SDR）。
+public enum ColorMode: String, Codable, CaseIterable, Sendable {
+    case sdr, hdr
+
+    public var displayName: String { self == .sdr ? "SDR" : "HDR" }
+}
+
 public struct Project: Codable, Equatable, Sendable {
     public static let currentSchemaVersion = 1
 
@@ -42,6 +49,9 @@ public struct Project: Codable, Equatable, Sendable {
     public var musicTrack: [AudioClip] = []
     public var subtitles: [Subtitle] = []
     public var subtitleStyle = SubtitleStyle()
+    public var colorMode: ColorMode = .sdr
+    /// 为 true 时导入 HDR 素材会自动切到 HDR；用户手动设置后为 false。
+    public var colorModeIsAutomatic = true
 
     public init(name: String) {
         self.name = name
@@ -54,6 +64,18 @@ public struct Project: Codable, Equatable, Sendable {
 }
 
 // MARK: - 素材
+
+public enum HDRFormat: String, Codable, Sendable {
+    case hlg, pq, dolbyVision
+
+    public var displayName: String {
+        switch self {
+        case .hlg: "HLG"
+        case .pq: "HDR10"
+        case .dolbyVision: "杜比视界"
+        }
+    }
+}
 
 public enum MediaKind: String, Codable, Sendable {
     case video, image, audio
@@ -72,9 +94,12 @@ public struct MediaAsset: Codable, Equatable, Identifiable, Sendable {
     public var height: Int
     public var hasAudio: Bool
     public var frameRate: Double
+    /// HDR 视频的格式；SDR 为 nil。
+    public var hdr: HDRFormat?
 
     public init(id: UUID = UUID(), kind: MediaKind, name: String, path: String, bookmark: Data? = nil,
-                duration: Time, width: Int, height: Int, hasAudio: Bool, frameRate: Double) {
+                duration: Time, width: Int, height: Int, hasAudio: Bool, frameRate: Double, hdr: HDRFormat? = nil) {
+        self.hdr = hdr
         self.id = id
         self.kind = kind
         self.name = name
@@ -270,4 +295,42 @@ public struct SubtitleStyle: Codable, Hashable, Sendable {
     public var verticalPosition: Double = 0.85
 
     public init() {}
+}
+
+// MARK: - 兼容旧工程文件：新增字段缺省时取默认值
+
+extension Project {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        aspect = try c.decode(AspectRatio.self, forKey: .aspect)
+        frameRate = try c.decode(Int.self, forKey: .frameRate)
+        assets = try c.decode([MediaAsset].self, forKey: .assets)
+        mainTrack = try c.decode([VideoClip].self, forKey: .mainTrack)
+        transitions = try c.decode([UUID: Transition].self, forKey: .transitions)
+        musicTrack = try c.decode([AudioClip].self, forKey: .musicTrack)
+        subtitles = try c.decode([Subtitle].self, forKey: .subtitles)
+        subtitleStyle = try c.decode(SubtitleStyle.self, forKey: .subtitleStyle)
+        colorMode = try c.decodeIfPresent(ColorMode.self, forKey: .colorMode) ?? .sdr
+        colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
+    }
+}
+
+extension MediaAsset {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        kind = try c.decode(MediaKind.self, forKey: .kind)
+        name = try c.decode(String.self, forKey: .name)
+        path = try c.decode(String.self, forKey: .path)
+        bookmark = try c.decodeIfPresent(Data.self, forKey: .bookmark)
+        duration = try c.decode(Time.self, forKey: .duration)
+        width = try c.decode(Int.self, forKey: .width)
+        height = try c.decode(Int.self, forKey: .height)
+        hasAudio = try c.decode(Bool.self, forKey: .hasAudio)
+        frameRate = try c.decode(Double.self, forKey: .frameRate)
+        hdr = try c.decodeIfPresent(HDRFormat.self, forKey: .hdr)
+    }
 }
