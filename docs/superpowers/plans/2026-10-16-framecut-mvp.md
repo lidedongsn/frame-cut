@@ -231,3 +231,26 @@ App/
 
 - [ ] Step 1: `swift test` 全部通过；`xcodebuild build` 成功。
 - [ ] Step 2: 按设计文档“目标”逐条手动验收并记录问题，修复后 Commit。
+
+---
+
+## HDR 追加任务（对应设计文档第 8 节）
+
+### Task 14: 模型与素材识别
+- `enum HDRFormat { hlg, pq, dolbyVision }`，`MediaAsset.hdr: HDRFormat?`；`enum ColorMode { sdr, hdr }`，`Project.colorMode`、`Project.colorModeIsAutomatic`；自定义解码兼容旧文件。
+- `Project.addAssets(_:)`：追加素材并在自动模式下遇到 HDR 素材切到 `.hdr`。
+- `MediaProbe` 读取格式描述的传输函数与杜比视界配置。
+- 测试：`testLegacyJSONDecodesWithDefaults`、`testImportHDRSwitchesColorMode`、`testManualColorModeNotOverridden`、`testProbeHLG`、`testProbePQ`、`testProbeSDRHasNoHDR`。
+
+### Task 15: 色调映射与 HDR 调色
+- `ToneMap.map(_ x: Double) -> Double`（相对参考白的线性亮度；knee 0.7，峰值 1000/203 → 1.0）与 65³ PQ 空间 LUT。
+- `FilterLUT` 合并调节参数，按 `GradingSpace { sdr, hlg }` 生成 LUT。
+- 测试：`testBelowKneeIdentity`、`testReferenceWhite`、`testMonotonic`、`testPeakMapsToOne`、`testHighlightsDistinct`。
+
+### Task 16: HDR 渲染与导出
+- `DynamicRangeOutput { sdr, hlg, pq }`；三种合成器子类；`makeVideoComposition(project:renderSize:output:)`；FrameRenderer 浮点工作空间与按输出渲染。
+- `ExportSettings.dynamicRange`；HDR 时 HEVC Main10、x420、BT.2020 + HLG/PQ 标记。
+- 测试：HLG 源在 HLG 输出时峰值线性值 > 4；SDR 输出时色带严格递增且峰值不截成参考白；HDR 工程字幕不超过 1.05；HLG / PQ / SDR 导出的传输函数与位深正确，HLG 导出峰值码值约 940。
+
+### Task 17: 界面
+- 工程设置色彩模式、素材与片段 HDR 标记、导出面板动态范围选项、预览按工程模式输出。
