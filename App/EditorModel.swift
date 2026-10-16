@@ -213,8 +213,17 @@ final class EditorModel {
         seek(to: playhead + Time(seconds: Double(frames) / Double(project.frameRate)))
     }
 
+    /// 缩放时保持在屏幕上不动的时刻（鼠标处或播放头），由时间线读取后清空。
+    @ObservationIgnored var zoomAnchor: Time?
+
+    /// 菜单 / 滑块缩放：以播放头为锚点。
     func zoom(by factor: Double) {
-        pointsPerSecond = min(600, max(8, pointsPerSecond * factor))
+        zoom(by: factor, anchor: playhead)
+    }
+
+    func zoom(by factor: Double, anchor: Time) {
+        zoomAnchor = anchor
+        pointsPerSecond = TimelineZoom.clamped(pointsPerSecond * factor)
     }
 
     // MARK: 编辑

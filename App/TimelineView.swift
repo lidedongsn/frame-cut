@@ -33,6 +33,11 @@ struct TimelineView: View {
                 ScrollView([.horizontal, .vertical]) {
                     let width = max(geo.size.width, x(model.duration) + 400)
                     ZStack(alignment: .topLeading) {
+                        // 捏合 / ⌘⌥+滚轮缩放，并保持锚点位置
+                        ZoomEventCatcher(model: model, pointsPerSecond: model.pointsPerSecond)
+                            .frame(width: width, height: max(geo.size.height, TL.height))
+                            .allowsHitTesting(false)
+
                         // 背景：点击 / 拖动定位播放头，取消选择
                         Color.clear
                             .frame(width: width, height: max(geo.size.height, TL.height))
@@ -151,6 +156,92 @@ struct TimelineView: View {
             }
         }
         return true
+    }
+}
+
+// MARK: - 缩放
+
+/// 接收触控板捏合与 ⌘/⌥+滚轮，按鼠标处时刻缩放；缩放后调整滚动位置，使锚点在屏幕上不动。
+private struct ZoomEventCatcher: NSViewRepresentable {
+    let model: EditorModel
+    let pointsPerSecond: Double
+
+    func makeCoordinator() -> Coordinator { Coordinator(model: model, pointsPerSecond: pointsPerSecond) }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.view = view
+        context.coordinator.install()
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        context.coordinator.pointsPerSecondChanged(to: pointsPerSecond)
+    }
+
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
+        coordinator.uninstall()
+    }
+
+    @MainActor
+    final class Coordinator {
+        let model: EditorModel
+        weak var view: NSView?
+        private var monitor: Any?
+        private var lastPointsPerSecond: Double
+
+        init(model: EditorModel, pointsPerSecond: Double) {
+            self.model = model
+            lastPointsPerSecond = pointsPerSecond
+        }
+
+        func install() {
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .magnify]) { [weak self] event in
+                MainActor.assumeIsolated { self?.handle(event) ?? event }
+            }
+        }
+
+        func uninstall() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+
+        private func handle(_ event: NSEvent) -> NSEvent? {
+            guard let view, event.window === view.window else { return event }
+            let point = view.convert(event.locationInWindow, from: nil)
+            guard view.visibleRect.contains(point) else { return event }
+            let factor: Double
+            switch event.type {
+            case .magnify:
+                factor = 1 + event.magnification
+            case .scrollWheel where !event.modifierFlags.intersection([.command, .option]).isEmpty:
+                let dy = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY : event.scrollingDeltaY * 8
+                factor = TimelineZoom.factor(scrollDelta: dy)
+            default:
+                return event
+            }
+            // SwiftUI 内容坐标 y 向下，x 与时间线一致
+            let anchor = Time(seconds: max(0, Double(point.x - TL.leading) / model.pointsPerSecond))
+            model.zoom(by: factor, anchor: anchor)
+            return nil
+        }
+
+        func pointsPerSecondChanged(to pps: Double) {
+            guard pps != lastPointsPerSecond else { return }
+            let old = lastPointsPerSecond
+            lastPointsPerSecond = pps
+            guard let scrollView = view?.enclosingScrollView else { return }
+            let anchor = model.zoomAnchor ?? model.playhead
+            model.zoomAnchor = nil
+            let clip = scrollView.contentView
+            let origin = TimelineZoom.scrollOrigin(anchor: anchor, oldPointsPerSecond: old, newPointsPerSecond: pps,
+                                                   oldOrigin: Double(clip.bounds.origin.x), leading: Double(TL.leading))
+            // 等 SwiftUI 按新宽度布局后再滚动
+            DispatchQueue.main.async {
+                clip.scroll(to: NSPoint(x: CGFloat(origin), y: clip.bounds.origin.y))
+                scrollView.reflectScrolledClipView(clip)
+            }
+        }
     }
 }
 

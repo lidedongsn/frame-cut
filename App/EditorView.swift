@@ -149,8 +149,10 @@ private struct TimelineToolbar: View {
                 .foregroundStyle(Theme.secondary)
             Spacer()
             Image(systemName: "minus.magnifyingglass").foregroundStyle(Theme.tertiary)
-            Slider(value: Binding(get: { log(model.pointsPerSecond) }, set: { model.pointsPerSecond = exp($0) }),
-                   in: log(8)...log(600))
+                .help("缩放时间线：触控板捏合，或按住 ⌘ / ⌥ 滚动滚轮")
+            Slider(value: Binding(get: { log(model.pointsPerSecond) },
+                                  set: { model.zoom(by: exp($0) / model.pointsPerSecond) }),
+                   in: log(TimelineZoom.minPointsPerSecond)...log(TimelineZoom.maxPointsPerSecond))
                 .frame(width: 140)
                 .controlSize(.mini)
                 .tint(Theme.accent)
