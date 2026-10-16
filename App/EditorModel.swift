@@ -50,6 +50,8 @@ final class EditorModel {
     var showExport = false
     var transcribeState: TranscribeState = .idle
     var errorMessage: String?
+    /// 非错误的提示（如自动切换到 HDR）。
+    var notice: String?
     var lastSaved: Date?
     var importing = false
 
@@ -114,6 +116,8 @@ final class EditorModel {
     // MARK: 播放
 
     var previewSize: CGSize { RenderSize.size(aspect: project.aspect, shortSide: Self.previewShortSide) }
+    /// HDR 工程以 HLG 预览，在支持 EDR 的屏幕上显示真实亮度。
+    var previewOutput: DynamicRangeOutput { project.colorMode == .hdr ? .hlg : .sdr }
 
     func scheduleRebuild(immediate: Bool = false) {
         rebuildTask?.cancel()
@@ -136,7 +140,7 @@ final class EditorModel {
             return
         }
         if let built, built.structureKey == CompositionBuilder.structureKey(project), let item = player.currentItem {
-            item.videoComposition = built.makeVideoComposition(project: project, renderSize: size)
+            item.videoComposition = built.makeVideoComposition(project: project, renderSize: size, output: previewOutput)
             item.audioMix = built.makeAudioMix(project: project)
             if !isPlaying { seek(to: playhead) }
             return
@@ -145,7 +149,7 @@ final class EditorModel {
             let next = try await CompositionBuilder.build(project: project, renderSize: size)
             guard !Task.isCancelled, project == store.project else { return }
             let item = AVPlayerItem(asset: next.composition)
-            item.videoComposition = next.makeVideoComposition(project: project, renderSize: size)
+            item.videoComposition = next.makeVideoComposition(project: project, renderSize: size, output: previewOutput)
             item.audioMix = next.makeAudioMix(project: project)
             item.audioTimePitchAlgorithm = .spectral
             built = next
@@ -263,10 +267,9 @@ final class EditorModel {
             }
         }
         let at = playhead
+        let wasHDR = project.colorMode == .hdr
         store.perform { p in
-            for asset in assets where !p.assets.contains(where: { $0.id == asset.id }) {
-                p.assets.append(asset)
-            }
+            p.addAssets(assets)
             guard addToTimeline else { return }
             for asset in assets {
                 switch asset.kind {
@@ -276,6 +279,9 @@ final class EditorModel {
             }
         }
         if !failed.isEmpty { errorMessage = "以下文件无法导入：\(failed.joined(separator: "、"))" }
+        if !wasHDR, project.colorMode == .hdr {
+            notice = "检测到 HDR 素材，工程已切换为 HDR：预览与导出保留高光细节。可在右侧工程设置中改回 SDR。"
+        }
     }
 
     func importPanel(addToTimeline: Bool, audioOnly: Bool = false) {

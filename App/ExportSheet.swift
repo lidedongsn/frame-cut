@@ -10,9 +10,18 @@ struct ExportSheet: View {
     @AppStorage("export.shortSide") private var shortSide = 1080
     @AppStorage("export.frameRate") private var frameRate = 30
     @AppStorage("export.codec") private var codecRaw = ExportSettings.Codec.h264.rawValue
+    @AppStorage("export.hdrRange") private var hdrRangeRaw = DynamicRangeOutput.hlg.rawValue
+
+    private var isHDRProject: Bool { model.project.colorMode == .hdr }
+
+    /// HDR 工程可选 HLG / HDR10 / SDR；SDR 工程只能导出 SDR。
+    private var dynamicRange: DynamicRangeOutput {
+        isHDRProject ? (DynamicRangeOutput(rawValue: hdrRangeRaw) ?? .hlg) : .sdr
+    }
 
     private var settings: ExportSettings {
-        ExportSettings(shortSide: shortSide, frameRate: frameRate, codec: ExportSettings.Codec(rawValue: codecRaw) ?? .h264)
+        ExportSettings(shortSide: shortSide, frameRate: frameRate, codec: ExportSettings.Codec(rawValue: codecRaw) ?? .h264,
+                       dynamicRange: dynamicRange)
     }
 
     private var outputSize: CGSize { RenderSize.size(aspect: model.project.aspect, shortSide: shortSide) }
@@ -64,11 +73,25 @@ struct ExportSheet: View {
             Picker("帧率", selection: $frameRate) {
                 ForEach([24, 25, 30, 60], id: \.self) { Text("\($0) fps").tag($0) }
             }
-            Picker("编码", selection: $codecRaw) {
-                ForEach(ExportSettings.Codec.allCases, id: \.self) { Text($0.displayName).tag($0.rawValue) }
+            if isHDRProject {
+                Picker("动态范围", selection: $hdrRangeRaw) {
+                    Text("HDR（HLG，推荐）").tag(DynamicRangeOutput.hlg.rawValue)
+                    Text("HDR10（PQ）").tag(DynamicRangeOutput.pq.rawValue)
+                    Text("SDR（自动色调映射）").tag(DynamicRangeOutput.sdr.rawValue)
+                }
+            }
+            if dynamicRange.isHDR {
+                LabeledContent("编码", value: "HEVC 10 位（HDR 必需）")
+            } else {
+                Picker("编码", selection: $codecRaw) {
+                    ForEach(ExportSettings.Codec.allCases, id: \.self) { Text($0.displayName).tag($0.rawValue) }
+                }
             }
         }
         .formStyle(.grouped)
+        if isHDRProject {
+            Text(rangeHint).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
         Text("输出 \(Int(outputSize.width))×\(Int(outputSize.height)) · 约 \(settings.bitrate(for: outputSize) / 1_000_000) Mbps · 时长 \(model.duration.displayString) · 无水印")
             .font(.system(size: 11)).foregroundStyle(.secondary)
         if case .failed(let message) = model.exportState {
@@ -84,6 +107,14 @@ struct ExportSheet: View {
             Button("导出…") { chooseDestination() }
                 .keyboardShortcut(.defaultAction)
                 .disabled(model.duration == .zero)
+        }
+    }
+
+    private var rangeHint: String {
+        switch dynamicRange {
+        case .hlg: "兼容性最好的 HDR 格式：iPhone、抖音、B 站、YouTube 都支持，在普通屏幕上也能正常显示。"
+        case .pq: "HDR10：适合电视和专业平台，带 1000 尼特 HDR10 元数据。普通屏幕上依赖播放器做色调映射。"
+        case .sdr: "转为普通视频：高光平滑压缩，不会过曝，适合不支持 HDR 的平台。"
         }
     }
 

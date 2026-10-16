@@ -11,22 +11,28 @@ public actor ThumbnailProvider {
     private let cache = NSCache<NSString, CGImage>()
     private var generators: [URL: AVAssetImageGenerator] = [:]
 
+    /// HDR 帧的色调映射（由引擎注入，FCMedia 不依赖渲染引擎）。
+    nonisolated(unsafe) public static var hdrToneMapper: (@Sendable (CGImage, HDRFormat) -> CGImage?)?
+
     public init() {
         cache.countLimit = 2000
     }
 
-    public func thumbnail(url: URL, time: Time, maxHeight: CGFloat) async -> CGImage? {
+    public func thumbnail(url: URL, time: Time, maxHeight: CGFloat, hdr: HDRFormat? = nil) async -> CGImage? {
         let bucket = (time.seconds * 2).rounded() / 2
-        let key = "\(url.path)|\(bucket)|\(Int(maxHeight))" as NSString
+        let key = "\(url.path)|\(bucket)|\(Int(maxHeight))|\(hdr?.rawValue ?? "")" as NSString
         if let hit = cache.object(forKey: key) { return hit }
 
-        let image: CGImage?
+        var image: CGImage?
         if isImageFile(url) {
             image = imageThumbnail(url: url, maxPixel: maxHeight * 2)
         } else {
             let generator = generator(for: url, maxHeight: maxHeight)
             let cmTime = CMTime(seconds: bucket, preferredTimescale: 600)
             image = try? await generator.image(at: cmTime).image
+        }
+        if let hdr, let raw = image, let mapper = Self.hdrToneMapper {
+            image = mapper(raw, hdr)
         }
         if let image { cache.setObject(image, forKey: key) }
         return image

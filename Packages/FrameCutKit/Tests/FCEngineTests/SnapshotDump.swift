@@ -42,3 +42,14 @@ final class DemoProjectMaker: XCTestCase {
         try ProjectFile.write(p, to: URL(fileURLWithPath: dir).appendingPathComponent("demo.framecut"))
     }
 }
+
+final class HDRDemoProjectMaker: XCTestCase {
+    func testMakeHDRDemoProject() async throws {
+        guard let dir = ProcessInfo.processInfo.environment["FC_DEMO_DIR"] else { throw XCTSkip("未设置 FC_DEMO_DIR") }
+        var p = try await Fixtures.project(["hlg_bands_2s.mov", "landscape_10s.mp4", "pq_bands_2s.mov", "photo.jpg"])
+        p.name = "HDR 演示"
+        p.applyTransitionToAll(FCCore.Transition(kind: .dissolve, duration: Time(seconds: 0.5)))
+        p.addSubtitle(at: Time(seconds: 0.2), text: "HDR 素材 + SDR 素材混剪", duration: Time(seconds: 10))
+        try ProjectFile.write(p, to: URL(fileURLWithPath: dir).appendingPathComponent("hdr-demo.framecut"))
+    }
+}

@@ -40,6 +40,22 @@ struct EditorView: View {
         .sheet(isPresented: Binding(get: { !model.missingAssets.isEmpty }, set: { if !$0 { model.missingAssets = [] } })) {
             MissingAssetsSheet(model: model)
         }
+        .overlay(alignment: .top) {
+            if let notice = model.notice {
+                HStack(spacing: 10) {
+                    Image(systemName: "sun.max.fill").foregroundStyle(Theme.playhead)
+                    Text(notice).font(.system(size: 12))
+                    Button { model.notice = nil } label: { Image(systemName: "xmark").font(.system(size: 10)) }
+                        .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 9)
+                .background(Theme.raised, in: Capsule())
+                .overlay(Capsule().stroke(Theme.border))
+                .foregroundStyle(Theme.text)
+                .padding(.top, 52)
+                .task { try? await Task.sleep(nanoseconds: 8_000_000_000); model.notice = nil }
+            }
+        }
         .alert("提示", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("好") { model.errorMessage = nil }
         } message: {
@@ -88,6 +104,7 @@ private struct TopBar: View {
             Text(model.project.name)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.text)
+            if model.project.colorMode == .hdr { HDRBadge() }
             if let saved = model.lastSaved {
                 Text("已自动保存 \(saved.formatted(date: .omitted, time: .shortened))")
                     .font(.system(size: 11))
@@ -188,5 +205,21 @@ private struct MissingAssetsSheet: View {
         }
         .padding(20)
         .frame(width: 520)
+    }
+}
+
+/// HDR 标记。
+struct HDRBadge: View {
+    var small = false
+
+    var body: some View {
+        Text("HDR")
+            .font(.system(size: small ? 8 : 10, weight: .heavy))
+            .padding(.horizontal, small ? 3 : 5)
+            .padding(.vertical, small ? 0 : 1)
+            .foregroundStyle(.black)
+            .background(LinearGradient(colors: [Color(red: 1, green: 0.86, blue: 0.3), Color(red: 1, green: 0.6, blue: 0.2)],
+                                       startPoint: .leading, endPoint: .trailing),
+                        in: RoundedRectangle(cornerRadius: 3))
     }
 }

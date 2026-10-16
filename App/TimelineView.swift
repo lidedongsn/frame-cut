@@ -266,6 +266,7 @@ private struct MainClipView: View {
                     Text(String(format: "%.2gx", clip.speed)).font(.system(size: 9, weight: .bold))
                         .padding(.horizontal, 3).background(Theme.accent, in: RoundedRectangle(cornerRadius: 2)).foregroundStyle(.black)
                 }
+                if asset.hdr != nil { HDRBadge(small: true) }
                 if clip.muted { Image(systemName: "speaker.slash.fill").font(.system(size: 9)) }
                 if clip.filter.preset != .none { Image(systemName: "camera.filters").font(.system(size: 9)) }
                 Text(placement.duration.displayString).font(.system(size: 9).monospacedDigit())
@@ -352,7 +353,7 @@ private struct ThumbnailStrip: View {
         HStack(spacing: 0) {
             ForEach(0..<count, id: \.self) { i in
                 let t = clip.sourceIn + Time(seconds: Double((CGFloat(i) + 0.5) * cellWidth / pps) * clip.speed)
-                ThumbnailCell(url: asset.url, time: asset.kind == .image ? .zero : Time.min(t, clip.sourceOut), height: height)
+                ThumbnailCell(url: asset.url, time: asset.kind == .image ? .zero : Time.min(t, clip.sourceOut), height: height, hdr: asset.hdr)
                     .frame(width: cellWidth, height: height)
                     .clipped()
             }
@@ -366,6 +367,7 @@ private struct ThumbnailCell: View {
     let url: URL
     let time: Time
     let height: CGFloat
+    let hdr: HDRFormat?
     @State private var image: CGImage?
 
     var body: some View {
@@ -375,7 +377,7 @@ private struct ThumbnailCell: View {
             }
         }
         .task(id: "\(url.path)|\(Int(time.seconds * 2))") {
-            image = await ThumbnailProvider.shared.thumbnail(url: url, time: time, maxHeight: height)
+            image = await ThumbnailProvider.shared.thumbnail(url: url, time: time, maxHeight: height, hdr: hdr)
         }
     }
 }

@@ -1,4 +1,5 @@
 import CoreImage
+import FCCore
 import Foundation
 
 /// HDR → SDR 色调映射。
@@ -67,5 +68,17 @@ enum PQ {
     static func decode(_ e: Double) -> Double {
         let p = pow(max(0, e), 1 / m2)
         return 10000 * pow(max(p - c1, 0) / (c2 - c3 * p), 1 / m1)
+    }
+}
+
+/// HDR 素材缩略图：系统生成的 HDR 帧不带色彩空间（直接是 HLG / PQ 信号值），
+/// 按素材格式解释后做与成片一致的色调映射，输出 sRGB。
+public enum HDRThumbnail {
+    public static func toneMap(_ image: CGImage, format: HDRFormat) -> CGImage? {
+        let space = CGColorSpace(name: format == .pq ? CGColorSpace.itur_2100_PQ : CGColorSpace.itur_2100_HLG)!
+        guard let tagged = image.copy(colorSpace: space) else { return nil }
+        let input = CIImage(cgImage: tagged)
+        return FrameRenderer.shared.context.createCGImage(ToneMap.apply(input), from: input.extent, format: .RGBA8,
+                                                          colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!)
     }
 }

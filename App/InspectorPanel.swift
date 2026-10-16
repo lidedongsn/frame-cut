@@ -1,3 +1,4 @@
+import AppKit
 import FCCore
 import SwiftUI
 
@@ -45,6 +46,20 @@ private struct InspectorHeader: View {
 private struct ProjectInspector: View {
     @Bindable var model: EditorModel
 
+    private var screenSupportsHDR: Bool {
+        (NSScreen.main?.maximumPotentialExtendedDynamicRangeColorComponentValue ?? 1) > 1
+    }
+
+    private var colorModeHint: String {
+        switch model.project.colorMode {
+        case .hdr:
+            let screen = screenSupportsHDR ? "当前屏幕支持 HDR 预览。" : "当前屏幕不支持 HDR，预览会自动压缩亮度，导出不受影响。"
+            return "保留 HDR 素材的高光与色彩，可导出 HDR（HLG / HDR10）或 SDR。" + screen
+        case .sdr:
+            return model.project.hasHDRAssets ? "HDR 素材会自动做色调映射，高光平滑压缩而不过曝。" : "普通视频。导入 HDR 素材（如 iPhone 拍摄）时会自动切换为 HDR。"
+        }
+    }
+
     var body: some View {
         InspectorHeader(title: "工程设置", icon: "slider.horizontal.3")
         VStack(alignment: .leading, spacing: 8) {
@@ -69,6 +84,17 @@ private struct ProjectInspector: View {
                     .buttonStyle(.plain)
                 }
             }
+        }
+        VStack(alignment: .leading, spacing: 8) {
+            SectionTitle("色彩")
+            Picker("", selection: Binding(get: { model.project.colorMode },
+                                          set: { mode in model.store.perform { $0.setColorMode(mode) } })) {
+                Text("SDR").tag(ColorMode.sdr)
+                Text("HDR").tag(ColorMode.hdr)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            Text(colorModeHint).font(.system(size: 11)).foregroundStyle(Theme.tertiary).fixedSize(horizontal: false, vertical: true)
         }
         VStack(alignment: .leading, spacing: 8) {
             SectionTitle("帧率")

@@ -2,6 +2,7 @@ import AVFoundation
 import CoreImage
 import FCCore
 @testable import FCEngine
+import FCMedia
 import XCTest
 
 /// 测试素材的四条竖向亮度带中心（相对横坐标）。
@@ -173,5 +174,17 @@ final class HDRExportTests: XCTestCase {
         XCTAssertNotEqual(HDRFixtures.transfer(format), kCMFormatDescriptionTransferFunction_ITU_R_2100_HLG as String)
         XCTAssertTrue(zip(luma, luma.dropFirst()).allSatisfy { $0 < $1 }, "色调映射后亮度应递增：\(luma)")
         XCTAssertLessThan(luma[2], 235, "400 尼特不应截成纯白：\(luma)")
+    }
+}
+
+final class HDRThumbnailTests: XCTestCase {
+    func testHDRThumbnailIsToneMapped() async throws {
+        ThumbnailProvider.hdrToneMapper = HDRThumbnail.toneMap
+        let img = await ThumbnailProvider().thumbnail(url: try TestMedia.url("hlg_bands_2s.mov"), time: Time(seconds: 0.5),
+                                                      maxHeight: 90, hdr: .hlg)
+        let thumb = try XCTUnwrap(img)
+        let v = bandX.map { Fixtures.pixel(thumb, x: $0, y: 0.5).0 }
+        XCTAssertTrue(zip(v, v.dropFirst()).allSatisfy { $0 < $1 }, "色调映射后各亮度带应递增：\(v)")
+        XCTAssertLessThan(v[2], 252, "400 尼特不应截成纯白：\(v)")
     }
 }

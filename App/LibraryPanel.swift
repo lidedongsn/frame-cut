@@ -123,6 +123,9 @@ private struct AssetCard: View {
                     }
                 }
                 .clipped()
+            if asset.hdr != nil {
+                HDRBadge(small: true).padding(4).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            }
             Text(asset.kind == .image ? "照片" : asset.duration.displayString)
                 .font(.system(size: 9).monospacedDigit())
                 .padding(.horizontal, 4).padding(.vertical, 1)
@@ -147,9 +150,9 @@ private struct AssetCard: View {
         .onHover { hovering = $0 }
         .onTapGesture(count: 2, perform: add)
         .draggable(AssetDrag.prefix + asset.id.uuidString)
-        .help(asset.name)
+        .help(asset.hdr.map { "\(asset.name)（\($0.displayName)）" } ?? asset.name)
         .task(id: asset.path) {
-            thumb = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: Time(seconds: min(1, asset.duration.seconds / 2)), maxHeight: 90)
+            thumb = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: Time(seconds: min(1, asset.duration.seconds / 2)), maxHeight: 90, hdr: asset.hdr)
         }
     }
 }
@@ -354,7 +357,7 @@ private struct FilterTab: View {
             previews = [:]
             return
         }
-        guard let base = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: clip.sourceIn + clip.sourceDuration / 2, maxHeight: 80) else { return }
+        guard let base = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: clip.sourceIn + clip.sourceDuration / 2, maxHeight: 80, hdr: asset.hdr) else { return }
         var result: [FilterPreset: CGImage] = [:]
         for preset in FilterPreset.allCases {
             result[preset] = preset == .none ? base : FilterPreview.render(base, preset: preset)

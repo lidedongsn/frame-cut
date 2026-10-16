@@ -1,9 +1,15 @@
+import FCEngine
+import FCMedia
 import SwiftUI
 
 @main
 struct FrameCutApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var app = AppModel()
+
+    init() {
+        ThumbnailProvider.hdrToneMapper = HDRThumbnail.toneMap
+    }
 
     var body: some Scene {
         Window("FrameCut", id: "main") {
