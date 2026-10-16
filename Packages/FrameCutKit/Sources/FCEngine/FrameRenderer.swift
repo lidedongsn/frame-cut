@@ -1,0 +1,202 @@
+import AVFoundation
+import CoreImage
+import FCCore
+import ImageIO
+import Metal
+
+/// 用 Core Image（Metal 后端）合成一帧：方向 → 填充画幅 → 用户变换 → 滤镜 → 转场 → 字幕。
+final class FrameRenderer: @unchecked Sendable {
+    static let shared = FrameRenderer()
+
+    let context: CIContext
+    private let imageCache = NSCache<NSString, CIImage>()
+    private let outputColorSpace = CGColorSpace(name: CGColorSpace.itur_709)!
+
+    private init() {
+        if let device = MTLCreateSystemDefaultDevice() {
+            context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false, .name: "FrameCut"])
+        } else {
+            context = CIContext(options: [.cacheIntermediates: false])
+        }
+        imageCache.countLimit = 64
+    }
+
+    func render(_ request: AVAsynchronousVideoCompositionRequest) throws -> CVPixelBuffer {
+        guard let instruction = request.videoCompositionInstruction as? RenderInstruction else {
+            throw RenderError.badInstruction
+        }
+        guard let output = request.renderContext.newPixelBuffer() else { throw RenderError.noBuffer }
+        let canvas = request.renderContext.size
+        let time = Time(request.compositionTime)
+        let frame = composeFrame(instruction: instruction, time: time, canvas: canvas) { id in
+            request.sourceFrame(byTrackID: id)
+        }
+        context.render(frame, to: output, bounds: CGRect(origin: .zero, size: canvas), colorSpace: outputColorSpace)
+        return output
+    }
+
+    func composeFrame(instruction: RenderInstruction, time: Time, canvas: CGSize,
+                      source: (CMPersistentTrackID) -> CVPixelBuffer?) -> CIImage {
+        let rect = CGRect(origin: .zero, size: canvas)
+        let black = CIImage(color: .black).cropped(to: rect)
+        let layers: [CIImage] = instruction.layers.map { layer in
+            guard let image = sourceImage(layer, source: source) else { return black }
+            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter).cropped(to: rect).composited(over: black)
+        }
+        var frame: CIImage
+        if let t = instruction.transition, layers.count == 2, t.duration > .zero {
+            let p = min(1, max(0, (time - t.start).seconds / t.duration.seconds))
+            frame = TransitionRenderer.apply(t.kind, from: layers[0], to: layers[1], progress: p, rect: rect)
+        } else {
+            frame = layers.last ?? black
+        }
+        for sub in instruction.scene.activeSubtitles(at: time) {
+            guard let text = SubtitleRenderer.image(text: sub.text, style: instruction.scene.style, canvas: canvas) else { continue }
+            let cx = (canvas.width - text.extent.width) / 2
+            let cy = canvas.height * (1 - instruction.scene.style.verticalPosition) - text.extent.height / 2
+            let y = min(max(0, cy), canvas.height - text.extent.height)
+            frame = text.transformed(by: CGAffineTransform(translationX: cx.rounded(), y: y.rounded())).composited(over: frame)
+        }
+        return frame.cropped(to: rect)
+    }
+
+    // MARK: 图层
+
+    private func sourceImage(_ layer: LayerSpec, source: (CMPersistentTrackID) -> CVPixelBuffer?) -> CIImage? {
+        switch layer.source {
+        case .track(let id):
+            guard let buffer = source(id) else { return nil }
+            return CIImage(cvPixelBuffer: buffer).oriented(Self.orientation(of: layer.preferredTransform))
+        case .image(let url):
+            return stillImage(url)
+        }
+    }
+
+    private func stillImage(_ url: URL) -> CIImage? {
+        let key = url.path as NSString
+        if let hit = imageCache.object(forKey: key) { return hit }
+        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 4096,
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else { return nil }
+        let image = CIImage(cgImage: cg)
+        imageCache.setObject(image, forKey: key)
+        return image
+    }
+
+    static func orientation(of t: CGAffineTransform) -> CGImagePropertyOrientation {
+        let a = t.a.rounded(), b = t.b.rounded(), c = t.c.rounded(), d = t.d.rounded()
+        switch (a, b, c, d) {
+        case (0, 1, -1, 0): return .right
+        case (0, -1, 1, 0): return .left
+        case (-1, 0, 0, -1): return .down
+        default: return .up
+        }
+    }
+
+    /// 用户旋转 → 填充画幅并居中 → 用户缩放与位移。
+    static func placed(_ input: CIImage, layer: LayerSpec, canvas: CGSize) -> CIImage {
+        var image = input
+        switch ((layer.transform.quarterTurns % 4) + 4) % 4 {
+        case 1: image = image.oriented(.right)
+        case 2: image = image.oriented(.down)
+        case 3: image = image.oriented(.left)
+        default: break
+        }
+        image = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY))
+        let w = image.extent.width, h = image.extent.height
+        guard w > 0, h > 0 else { return image }
+        let scale = max(canvas.width / w, canvas.height / h) * CGFloat(max(0.05, layer.transform.scale))
+        let tx = (canvas.width - w * scale) / 2 + CGFloat(layer.transform.offsetX) * canvas.width
+        let ty = (canvas.height - h * scale) / 2 - CGFloat(layer.transform.offsetY) * canvas.height
+        return image.transformed(by: CGAffineTransform(scaleX: scale, y: scale).concatenating(CGAffineTransform(translationX: tx, y: ty)))
+    }
+
+    static func filtered(_ input: CIImage, _ f: FilterSettings) -> CIImage {
+        guard !f.isIdentity else { return input }
+        var image = input
+        if let lut = FilterLUT.data(preset: f.preset, intensity: f.intensity) {
+            image = image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+                "inputCubeDimension": FilterLUT.dimension,
+                "inputCubeData": lut,
+                "inputColorSpace": CGColorSpace(name: CGColorSpace.sRGB)!,
+            ])
+        }
+        if f.brightness != 0 || f.contrast != 0 || f.saturation != 0 {
+            image = image.applyingFilter("CIColorControls", parameters: [
+                kCIInputBrightnessKey: f.brightness * 0.25,
+                kCIInputContrastKey: 1 + f.contrast * 0.5,
+                kCIInputSaturationKey: max(0, 1 + f.saturation),
+            ])
+        }
+        if f.temperature != 0 {
+            let t = CGFloat(f.temperature) * 0.12
+            image = image.applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: 1 + t, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: 1, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: 1 - t, w: 0),
+            ])
+        }
+        return image
+    }
+}
+
+enum RenderError: Error {
+    case badInstruction
+    case noBuffer
+}
+
+// MARK: - 转场
+
+enum TransitionRenderer {
+    static func apply(_ kind: TransitionKind, from a: CIImage, to b: CIImage, progress p: Double, rect: CGRect) -> CIImage {
+        let e = p * p * (3 - 2 * p) // smoothstep
+        let w = rect.width, h = rect.height
+        func shift(_ img: CIImage, _ dx: Double, _ dy: Double) -> CIImage {
+            img.transformed(by: CGAffineTransform(translationX: dx, y: dy))
+        }
+        func dissolve(_ x: CIImage, _ y: CIImage, _ t: Double) -> CIImage {
+            x.applyingFilter("CIDissolveTransition", parameters: [kCIInputTargetImageKey: y, kCIInputTimeKey: t])
+        }
+        let black = CIImage(color: .black).cropped(to: rect)
+        let white = CIImage(color: .white).cropped(to: rect)
+
+        switch kind {
+        case .dissolve:
+            return dissolve(a, b, p)
+        case .fadeBlack, .fadeWhite:
+            let mid = kind == .fadeBlack ? black : white
+            return p < 0.5 ? dissolve(a, mid, p * 2) : dissolve(mid, b, (p - 0.5) * 2)
+        case .pushLeft:
+            return shift(b, w * (1 - e), 0).composited(over: shift(a, -w * e, 0)).cropped(to: rect)
+        case .pushRight:
+            return shift(b, -w * (1 - e), 0).composited(over: shift(a, w * e, 0)).cropped(to: rect)
+        case .pushUp: // 画面向上移动（CI 坐标 y 向上）
+            return shift(b, 0, -h * (1 - e)).composited(over: shift(a, 0, h * e)).cropped(to: rect)
+        case .pushDown:
+            return shift(b, 0, h * (1 - e)).composited(over: shift(a, 0, -h * e)).cropped(to: rect)
+        case .slideLeft:
+            return shift(b, w * (1 - e), 0).composited(over: a).cropped(to: rect)
+        case .wipeLeft:
+            let edge = w * (1 - e)
+            let mask = CIImage(color: .white).cropped(to: CGRect(x: edge, y: 0, width: w - edge, height: h)).composited(over: black)
+            return b.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: a, kCIInputMaskImageKey: mask])
+        case .zoom:
+            let s = 1 + 0.6 * e
+            let zoomed = a.transformed(by: CGAffineTransform(translationX: -w / 2, y: -h / 2)
+                .concatenating(CGAffineTransform(scaleX: s, y: s))
+                .concatenating(CGAffineTransform(translationX: w / 2, y: h / 2))).cropped(to: rect)
+            return dissolve(zoomed, b, e)
+        case .blur:
+            let radius = sin(p * .pi) * 30 * h / 1080
+            func blurred(_ img: CIImage) -> CIImage {
+                radius < 0.5 ? img : img.clampedToExtent().applyingGaussianBlur(sigma: radius).cropped(to: rect)
+            }
+            return dissolve(blurred(a), blurred(b), e)
+        }
+    }
+}
