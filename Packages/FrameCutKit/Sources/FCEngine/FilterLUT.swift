@@ -1,29 +1,47 @@
-import Foundation
+import CoreGraphics
 import FCCore
+import Foundation
 import simd
 
-/// 滤镜预设 → 33³ 3D LUT（RGBA float，供 CIColorCubeWithColorSpace 使用）。强度已烘焙进 LUT。
+/// 调色空间：SDR 工程在 sRGB 中调色；HDR 工程在 HLG 中调色（覆盖到 1000 尼特，不截断高光）。
+enum GradingSpace: String, Sendable {
+    case sdr, hlg
+
+    var colorSpace: CGColorSpace {
+        CGColorSpace(name: self == .sdr ? CGColorSpace.sRGB : CGColorSpace.itur_2100_HLG)!
+    }
+
+    /// 亮度权重：sRGB 用 BT.709，HLG 用 BT.2020。
+    var lumaWeights: SIMD3<Double> {
+        self == .sdr ? SIMD3(0.2126, 0.7152, 0.0722) : SIMD3(0.2627, 0.6780, 0.0593)
+    }
+}
+
+/// 滤镜预设 + 调节（亮度、对比度、饱和度、色温）→ 一张 33³ 3D LUT（RGBA float）。
 enum FilterLUT {
     static let dimension = 33
     private static let lock = NSLock()
     private static var cache: [String: Data] = [:]
 
-    static func data(preset: FilterPreset, intensity: Double) -> Data? {
-        guard preset != .none, intensity > 0 else { return nil }
-        let k = (min(1, intensity) * 20).rounded() / 20
-        let key = "\(preset.rawValue)|\(k)"
+    static func data(_ f: FilterSettings, space: GradingSpace) -> Data? {
+        guard !f.isIdentity else { return nil }
+        func q(_ v: Double, _ step: Double) -> Double { (v / step).rounded() * step }
+        let s = FilterSettings.quantized(f, q)
+        let key = "\(space.rawValue)|\(s.preset.rawValue)|\(s.intensity)|\(s.brightness)|\(s.contrast)|\(s.saturation)|\(s.temperature)"
         lock.lock()
         defer { lock.unlock() }
         if let hit = cache[key] { return hit }
         let n = dimension
+        let k = s.preset == .none ? 0 : min(1, s.intensity)
         var values = [Float](repeating: 0, count: n * n * n * 4)
         var i = 0
         for b in 0..<n {
             for g in 0..<n {
                 for r in 0..<n {
                     let input = SIMD3<Double>(Double(r), Double(g), Double(b)) / Double(n - 1)
-                    let graded = grade(preset, input)
-                    let out = simd_clamp(input + (graded - input) * k, .zero, .one)
+                    var out = input + (grade(s.preset, input) - input) * k
+                    out = adjust(out, s, space)
+                    out = simd_clamp(out, .zero, .one)
                     values[i] = Float(out.x)
                     values[i + 1] = Float(out.y)
                     values[i + 2] = Float(out.z)
@@ -33,8 +51,19 @@ enum FilterLUT {
             }
         }
         let data = values.withUnsafeBufferPointer { Data(buffer: $0) }
+        if cache.count > 64 { cache.removeAll() }
         cache[key] = data
         return data
+    }
+
+    /// 调节参数（-1...1）作用于编码后的信号值。
+    static func adjust(_ c: SIMD3<Double>, _ f: FilterSettings, _ space: GradingSpace) -> SIMD3<Double> {
+        var o = c + SIMD3(repeating: f.brightness * 0.25)
+        o = (o - 0.5) * (1 + f.contrast * 0.5) + 0.5
+        let y = simd_dot(o, space.lumaWeights)
+        o = SIMD3(repeating: y) + (o - SIMD3(repeating: y)) * max(0, 1 + f.saturation)
+        o *= SIMD3(1 + f.temperature * 0.12, 1, 1 - f.temperature * 0.12)
+        return o
     }
 
     // MARK: 调色函数（输入输出均为 0...1 的 sRGB）
@@ -96,5 +125,18 @@ enum FilterLUT {
             return x + (s - x) * strength
         }
         return SIMD3(f(c.x), f(c.y), f(c.z))
+    }
+}
+
+extension FilterSettings {
+    /// 量化参数以提高 LUT 缓存命中（强度 0.05，调节 0.01）。
+    static func quantized(_ f: FilterSettings, _ q: (Double, Double) -> Double) -> FilterSettings {
+        var s = f
+        s.intensity = q(f.intensity, 0.05)
+        s.brightness = q(f.brightness, 0.01)
+        s.contrast = q(f.contrast, 0.01)
+        s.saturation = q(f.saturation, 0.01)
+        s.temperature = q(f.temperature, 0.01)
+        return s
     }
 }

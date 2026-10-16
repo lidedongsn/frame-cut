@@ -12,11 +12,19 @@ final class FrameRenderer: @unchecked Sendable {
     private let imageCache = NSCache<NSString, CIImage>()
     private let outputColorSpace = CGColorSpace(name: CGColorSpace.itur_709)!
 
+    /// 半精度浮点 + 扩展线性工作空间：1.0 = 203 尼特参考白，HDR 高光可超过 1.0。
+    static let contextOptions: [CIContextOption: Any] = [
+        .cacheIntermediates: false,
+        .name: "FrameCut",
+        .workingFormat: CIFormat.RGBAh,
+        .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!,
+    ]
+
     private init() {
         if let device = MTLCreateSystemDefaultDevice() {
-            context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false, .name: "FrameCut"])
+            context = CIContext(mtlDevice: device, options: Self.contextOptions)
         } else {
-            context = CIContext(options: [.cacheIntermediates: false])
+            context = CIContext(options: Self.contextOptions)
         }
         imageCache.countLimit = 64
     }
@@ -41,7 +49,7 @@ final class FrameRenderer: @unchecked Sendable {
         let black = CIImage(color: .black).cropped(to: rect)
         let layers: [CIImage] = instruction.layers.map { layer in
             guard let image = sourceImage(layer, source: source) else { return black }
-            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter).cropped(to: rect).composited(over: black)
+            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: .sdr).cropped(to: rect).composited(over: black)
         }
         var frame: CIImage
         if let t = instruction.transition, layers.count == 2, t.duration > .zero {
@@ -116,32 +124,13 @@ final class FrameRenderer: @unchecked Sendable {
         return image.transformed(by: CGAffineTransform(scaleX: scale, y: scale).concatenating(CGAffineTransform(translationX: tx, y: ty)))
     }
 
-    static func filtered(_ input: CIImage, _ f: FilterSettings) -> CIImage {
-        guard !f.isIdentity else { return input }
-        var image = input
-        if let lut = FilterLUT.data(preset: f.preset, intensity: f.intensity) {
-            image = image.applyingFilter("CIColorCubeWithColorSpace", parameters: [
-                "inputCubeDimension": FilterLUT.dimension,
-                "inputCubeData": lut,
-                "inputColorSpace": CGColorSpace(name: CGColorSpace.sRGB)!,
-            ])
-        }
-        if f.brightness != 0 || f.contrast != 0 || f.saturation != 0 {
-            image = image.applyingFilter("CIColorControls", parameters: [
-                kCIInputBrightnessKey: f.brightness * 0.25,
-                kCIInputContrastKey: 1 + f.contrast * 0.5,
-                kCIInputSaturationKey: max(0, 1 + f.saturation),
-            ])
-        }
-        if f.temperature != 0 {
-            let t = CGFloat(f.temperature) * 0.12
-            image = image.applyingFilter("CIColorMatrix", parameters: [
-                "inputRVector": CIVector(x: 1 + t, y: 0, z: 0, w: 0),
-                "inputGVector": CIVector(x: 0, y: 1, z: 0, w: 0),
-                "inputBVector": CIVector(x: 0, y: 0, z: 1 - t, w: 0),
-            ])
-        }
-        return image
+    static func filtered(_ input: CIImage, _ f: FilterSettings, space: GradingSpace) -> CIImage {
+        guard let lut = FilterLUT.data(f, space: space) else { return input }
+        return input.applyingFilter("CIColorCubeWithColorSpace", parameters: [
+            "inputCubeDimension": FilterLUT.dimension,
+            "inputCubeData": lut,
+            "inputColorSpace": space.colorSpace,
+        ])
     }
 }
 
@@ -206,7 +195,7 @@ enum TransitionRenderer {
 public enum FilterPreview {
     public static func render(_ image: CGImage, preset: FilterPreset) -> CGImage? {
         let input = CIImage(cgImage: image)
-        let output = FrameRenderer.filtered(input, FilterSettings(preset: preset))
+        let output = FrameRenderer.filtered(input, FilterSettings(preset: preset), space: .sdr)
         return FrameRenderer.shared.context.createCGImage(output, from: input.extent)
     }
 }
