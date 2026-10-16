@@ -154,9 +154,10 @@ final class EditorModel {
             player.replaceCurrentItem(with: item)
             seek(to: Time.min(playhead, duration))
             if wasPlaying { player.play() }
+        } catch CompositionError.missingAsset {
+            checkMissingAssets() // 由“重新定位”窗口提示，不再弹错误框
         } catch {
             errorMessage = error.localizedDescription
-            checkMissingAssets()
         }
     }
 
