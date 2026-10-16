@@ -14,6 +14,12 @@ public struct TranscriptSegment: Equatable, Sendable {
     }
 }
 
+public enum TranscribeError: LocalizedError {
+    case downloadFailed
+
+    public var errorDescription: String? { "识别模型下载失败，请检查网络后重试" }
+}
+
 public enum TranscribeProgress: Sendable {
     case downloading(Double)
     case loading
@@ -75,9 +81,7 @@ public actor WhisperKitTranscriber: Transcriber {
         } else {
             try FileManager.default.createDirectory(at: Self.modelsDirectory, withIntermediateDirectories: true)
             progress(.downloading(0))
-            folder = try await WhisperKit.download(variant: Self.modelVariant, downloadBase: Self.modelsDirectory) { p in
-                progress(.downloading(p.fractionCompleted))
-            }
+            folder = try await Self.download(progress: progress)
         }
         progress(.loading)
         let config = WhisperKitConfig(modelFolder: folder.path, verbose: false, logLevel: .error,
@@ -85,6 +89,23 @@ public actor WhisperKitTranscriber: Transcriber {
         let pipe = try await WhisperKit(config)
         self.pipe = pipe
         return pipe
+    }
+
+    /// 官方源不可达时（如国内网络）依次尝试镜像。
+    static let endpoints = ["https://huggingface.co", "https://hf-mirror.com"]
+
+    private static func download(progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> URL {
+        var lastError: Error?
+        for endpoint in endpoints {
+            do {
+                return try await WhisperKit.download(variant: modelVariant, downloadBase: modelsDirectory, endpoint: endpoint) { p in
+                    progress(.downloading(p.fractionCompleted))
+                }
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError ?? TranscribeError.downloadFailed
     }
 
     /// 去掉特殊标记与多余空白，繁体转简体。

@@ -200,3 +200,13 @@ enum TransitionRenderer {
         }
     }
 }
+
+// MARK: - 滤镜预览（素材库中的滤镜缩略图）
+
+public enum FilterPreview {
+    public static func render(_ image: CGImage, preset: FilterPreset) -> CGImage? {
+        let input = CIImage(cgImage: image)
+        let output = FrameRenderer.filtered(input, FilterSettings(preset: preset))
+        return FrameRenderer.shared.context.createCGImage(output, from: input.extent)
+    }
+}
