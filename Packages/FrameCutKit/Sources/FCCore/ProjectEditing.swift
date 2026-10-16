@@ -1,0 +1,196 @@
+import Foundation
+
+public enum EditLimits {
+    public static let minClipDuration = Time(seconds: 0.1)
+    public static let defaultImageDuration = Time(seconds: 3)
+    public static let speedRange: ClosedRange<Double> = 0.25...4
+    public static let defaultSubtitleDuration = Time(seconds: 2)
+}
+
+extension Project {
+    // MARK: 主轨
+
+    @discardableResult
+    public mutating func appendToMain(assetID: UUID) -> UUID? {
+        insertIntoMain(assetID: assetID, at: mainTrack.count)
+    }
+
+    @discardableResult
+    public mutating func insertIntoMain(assetID: UUID, at index: Int) -> UUID? {
+        guard let asset = asset(id: assetID) else { return nil }
+        let length: Time
+        switch asset.kind {
+        case .video: length = asset.duration
+        case .image: length = EditLimits.defaultImageDuration
+        case .audio: return nil
+        }
+        guard length >= EditLimits.minClipDuration else { return nil }
+        let clip = VideoClip(assetID: assetID, sourceIn: .zero, sourceOut: length)
+        mainTrack.insert(clip, at: min(max(0, index), mainTrack.count))
+        return clip.id
+    }
+
+    /// 在时间线时间 t 处分割主轨片段，返回后半段的新 id。
+    @discardableResult
+    public mutating func splitMain(at t: Time) -> UUID? {
+        let layout = TimelineLayout(project: self)
+        guard let index = layout.clipIndex(at: t) else { return nil }
+        let placement = layout.placements[index]
+        let offset = t - placement.start
+        guard offset >= EditLimits.minClipDuration, placement.end - t >= EditLimits.minClipDuration else { return nil }
+        var first = mainTrack[index]
+        let splitPoint = first.sourceIn + offset * first.speed
+        var second = first
+        second.id = UUID()
+        second.sourceIn = splitPoint
+        first.sourceOut = splitPoint
+        mainTrack[index] = first
+        mainTrack.insert(second, at: index + 1)
+        return second.id
+    }
+
+    public mutating func removeMain(id: UUID) {
+        mainTrack.removeAll { $0.id == id }
+        transitions[id] = nil
+    }
+
+    public mutating func moveMain(id: UUID, to newIndex: Int) {
+        guard let from = mainTrack.firstIndex(where: { $0.id == id }) else { return }
+        let clip = mainTrack.remove(at: from)
+        mainTrack.insert(clip, at: min(max(0, newIndex), mainTrack.count))
+    }
+
+    public mutating func trimMain(id: UUID, sourceIn: Time, sourceOut: Time) {
+        guard let i = mainTrack.firstIndex(where: { $0.id == id }) else { return }
+        let upper = assetUpperBound(mainTrack[i].assetID)
+        var lo = sourceIn.clamped(.zero, upper)
+        var hi = sourceOut.clamped(.zero, upper)
+        if hi - lo < EditLimits.minClipDuration {
+            hi = lo + EditLimits.minClipDuration
+            if hi > upper {
+                hi = upper
+                lo = upper - EditLimits.minClipDuration
+            }
+        }
+        mainTrack[i].sourceIn = lo
+        mainTrack[i].sourceOut = hi
+    }
+
+    public mutating func setSpeed(id: UUID, _ speed: Double) {
+        updateMain(id: id) { $0.speed = min(max(speed, EditLimits.speedRange.lowerBound), EditLimits.speedRange.upperBound) }
+    }
+
+    public mutating func updateMain(id: UUID, _ body: (inout VideoClip) -> Void) {
+        guard let i = mainTrack.firstIndex(where: { $0.id == id }) else { return }
+        body(&mainTrack[i])
+    }
+
+    public mutating func setTransition(_ transition: Transition?, before clipID: UUID) {
+        guard let i = mainTrack.firstIndex(where: { $0.id == clipID }), i > 0 else { return }
+        transitions[clipID] = transition
+    }
+
+    public mutating func applyTransitionToAll(_ transition: Transition?) {
+        transitions = [:]
+        guard let transition else { return }
+        for clip in mainTrack.dropFirst() { transitions[clip.id] = transition }
+    }
+
+    public mutating func applyFilterToAll(_ filter: FilterSettings) {
+        for i in mainTrack.indices { mainTrack[i].filter = filter }
+    }
+
+    // MARK: 音乐
+
+    @discardableResult
+    public mutating func addMusic(assetID: UUID, at start: Time) -> UUID? {
+        guard let asset = asset(id: assetID), asset.kind == .audio || (asset.kind == .video && asset.hasAudio),
+              asset.duration >= EditLimits.minClipDuration else { return nil }
+        let clip = AudioClip(assetID: assetID, start: Time.max(.zero, start), sourceIn: .zero, sourceOut: asset.duration)
+        musicTrack.append(clip)
+        musicTrack.sort { $0.start < $1.start }
+        return clip.id
+    }
+
+    @discardableResult
+    public mutating func splitMusic(id: UUID, at t: Time) -> UUID? {
+        guard let i = musicTrack.firstIndex(where: { $0.id == id }) else { return nil }
+        var first = musicTrack[i]
+        let offset = t - first.start
+        guard offset >= EditLimits.minClipDuration, first.end - t >= EditLimits.minClipDuration else { return nil }
+        var second = first
+        second.id = UUID()
+        second.start = t
+        second.sourceIn = first.sourceIn + offset
+        second.fadeIn = .zero
+        first.sourceOut = first.sourceIn + offset
+        first.fadeOut = .zero
+        musicTrack[i] = first
+        musicTrack.insert(second, at: i + 1)
+        return second.id
+    }
+
+    public mutating func removeMusic(id: UUID) {
+        musicTrack.removeAll { $0.id == id }
+    }
+
+    public mutating func updateMusic(id: UUID, _ body: (inout AudioClip) -> Void) {
+        guard let i = musicTrack.firstIndex(where: { $0.id == id }) else { return }
+        body(&musicTrack[i])
+        let upper = assetUpperBound(musicTrack[i].assetID)
+        musicTrack[i].start = Time.max(.zero, musicTrack[i].start)
+        musicTrack[i].sourceIn = musicTrack[i].sourceIn.clamped(.zero, upper)
+        musicTrack[i].sourceOut = musicTrack[i].sourceOut.clamped(musicTrack[i].sourceIn + EditLimits.minClipDuration, upper)
+        let half = musicTrack[i].duration / 2
+        musicTrack[i].fadeIn = musicTrack[i].fadeIn.clamped(.zero, half)
+        musicTrack[i].fadeOut = musicTrack[i].fadeOut.clamped(.zero, half)
+        musicTrack.sort { $0.start < $1.start }
+    }
+
+    // MARK: 字幕
+
+    @discardableResult
+    public mutating func addSubtitle(at t: Time, text: String, duration: Time = EditLimits.defaultSubtitleDuration) -> UUID {
+        let sub = Subtitle(start: Time.max(.zero, t), end: Time.max(.zero, t) + duration, text: text)
+        subtitles.append(sub)
+        subtitles.sort { $0.start < $1.start }
+        return sub.id
+    }
+
+    public mutating func updateSubtitle(id: UUID, _ body: (inout Subtitle) -> Void) {
+        guard let i = subtitles.firstIndex(where: { $0.id == id }) else { return }
+        body(&subtitles[i])
+        subtitles[i].start = Time.max(.zero, subtitles[i].start)
+        if subtitles[i].end - subtitles[i].start < EditLimits.minClipDuration {
+            subtitles[i].end = subtitles[i].start + EditLimits.minClipDuration
+        }
+        subtitles.sort { $0.start < $1.start }
+    }
+
+    public mutating func removeSubtitle(id: UUID) {
+        subtitles.removeAll { $0.id == id }
+    }
+
+    public mutating func replaceSubtitles(_ subs: [Subtitle]) {
+        subtitles = subs.sorted { $0.start < $1.start }
+    }
+
+    // MARK: 素材
+
+    public func missingAssets(fileExists: (String) -> Bool) -> [MediaAsset] {
+        assets.filter { !fileExists($0.path) }
+    }
+
+    public mutating func relinkAsset(id: UUID, to path: String, bookmark: Data?) {
+        guard let i = assets.firstIndex(where: { $0.id == id }) else { return }
+        assets[i].path = path
+        assets[i].name = (path as NSString).lastPathComponent
+        assets[i].bookmark = bookmark
+    }
+
+    /// 片段源区间上限：图片不限（取很大值），其余为素材时长。
+    private func assetUpperBound(_ assetID: UUID) -> Time {
+        guard let asset = asset(id: assetID) else { return .zero }
+        return asset.kind == .image ? Time(seconds: 3600) : asset.duration
+    }
+}
