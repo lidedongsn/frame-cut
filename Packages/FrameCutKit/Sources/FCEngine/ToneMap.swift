@@ -75,7 +75,7 @@ enum PQ {
 /// 按素材格式解释后做与成片一致的色调映射，输出 sRGB。
 public enum HDRThumbnail {
     public static func toneMap(_ image: CGImage, format: HDRFormat) -> CGImage? {
-        let space = CGColorSpace(name: format == .pq ? CGColorSpace.itur_2100_PQ : CGColorSpace.itur_2100_HLG)!
+        let space = CGColorSpace(name: format.isPQ ? CGColorSpace.itur_2100_PQ : CGColorSpace.itur_2100_HLG)!
         guard let tagged = image.copy(colorSpace: space) else { return nil }
         let input = CIImage(cgImage: tagged)
         return FrameRenderer.shared.context.createCGImage(ToneMap.apply(input), from: input.extent, format: .RGBA8,

@@ -49,4 +49,16 @@ final class HDRModelTests: XCTestCase {
         p.addAssets([a, a])
         XCTAssertEqual(p.assets.count, 1)
     }
+
+    /// 手写的 Project 解码必须覆盖所有字段：非默认值往返后应完全相等。
+    func testProjectRoundTripKeepsEveryField() throws {
+        var p = makeProject(clipSeconds: [2, 3])
+        p.aspect = .r9x16
+        p.frameRate = 60
+        p.setColorMode(.hdr)
+        p.subtitleStyle.verticalPosition = 0.3
+        p.assets[0].hdr = .dolbyVisionPQ
+        let decoded = try JSONDecoder().decode(Project.self, from: JSONEncoder().encode(p))
+        XCTAssertEqual(decoded, p)
+    }
 }

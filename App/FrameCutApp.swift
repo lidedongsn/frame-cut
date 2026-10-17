@@ -7,10 +7,6 @@ struct FrameCutApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var app = AppModel()
 
-    init() {
-        ThumbnailProvider.hdrToneMapper = HDRThumbnail.toneMap
-    }
-
     var body: some Scene {
         Window("FrameCut", id: "main") {
             RootView()
@@ -87,4 +83,9 @@ struct RootView: View {
             Text(app.alert ?? "")
         }
     }
+}
+
+/// 应用共用的缩略图提供者，HDR 帧按成片同样的方式色调映射。
+enum Thumbnails {
+    static let shared = ThumbnailProvider(hdrToneMapper: HDRThumbnail.toneMap)
 }

@@ -6,15 +6,15 @@ import ImageIO
 
 /// 视频 / 图片缩略图，内存缓存。时间按 0.5 秒取整以提高命中率。
 public actor ThumbnailProvider {
-    public static let shared = ThumbnailProvider()
+    public typealias ToneMapper = @Sendable (CGImage, HDRFormat) -> CGImage?
 
     private let cache = NSCache<NSString, CGImage>()
     private var generators: [URL: AVAssetImageGenerator] = [:]
+    /// HDR 帧的色调映射（由调用方传入，FCMedia 不依赖渲染引擎）。
+    private let hdrToneMapper: ToneMapper?
 
-    /// HDR 帧的色调映射（由引擎注入，FCMedia 不依赖渲染引擎）。
-    nonisolated(unsafe) public static var hdrToneMapper: (@Sendable (CGImage, HDRFormat) -> CGImage?)?
-
-    public init() {
+    public init(hdrToneMapper: ToneMapper? = nil) {
+        self.hdrToneMapper = hdrToneMapper
         cache.countLimit = 2000
     }
 
@@ -31,8 +31,8 @@ public actor ThumbnailProvider {
             let cmTime = CMTime(seconds: bucket, preferredTimescale: 600)
             image = try? await generator.image(at: cmTime).image
         }
-        if let hdr, let raw = image, let mapper = Self.hdrToneMapper {
-            image = mapper(raw, hdr)
+        if let hdr, let raw = image, let hdrToneMapper {
+            image = hdrToneMapper(raw, hdr) ?? raw
         }
         if let image { cache.setObject(image, forKey: key) }
         return image

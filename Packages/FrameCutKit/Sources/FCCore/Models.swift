@@ -66,15 +66,19 @@ public struct Project: Codable, Equatable, Sendable {
 // MARK: - 素材
 
 public enum HDRFormat: String, Codable, Sendable {
-    case hlg, pq, dolbyVision
+    /// dolbyVision：底层 HLG（iPhone）；dolbyVisionPQ：底层 PQ。
+    case hlg, pq, dolbyVision, dolbyVisionPQ
 
     public var displayName: String {
         switch self {
         case .hlg: "HLG"
         case .pq: "HDR10"
-        case .dolbyVision: "杜比视界"
+        case .dolbyVision, .dolbyVisionPQ: "杜比视界"
         }
     }
+
+    /// 信号为 PQ 编码（否则为 HLG）。
+    public var isPQ: Bool { self == .pq || self == .dolbyVisionPQ }
 }
 
 public enum MediaKind: String, Codable, Sendable {
@@ -298,6 +302,7 @@ public struct SubtitleStyle: Codable, Hashable, Sendable {
 }
 
 // MARK: - 兼容旧工程文件：新增字段缺省时取默认值
+// MediaAsset 的新增字段都是可选类型，自动合成的解码已允许缺省；Project 的新增字段有默认值，需手写。
 
 extension Project {
     public init(from decoder: Decoder) throws {
@@ -315,22 +320,5 @@ extension Project {
         subtitleStyle = try c.decode(SubtitleStyle.self, forKey: .subtitleStyle)
         colorMode = try c.decodeIfPresent(ColorMode.self, forKey: .colorMode) ?? .sdr
         colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
-    }
-}
-
-extension MediaAsset {
-    public init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        id = try c.decode(UUID.self, forKey: .id)
-        kind = try c.decode(MediaKind.self, forKey: .kind)
-        name = try c.decode(String.self, forKey: .name)
-        path = try c.decode(String.self, forKey: .path)
-        bookmark = try c.decodeIfPresent(Data.self, forKey: .bookmark)
-        duration = try c.decode(Time.self, forKey: .duration)
-        width = try c.decode(Int.self, forKey: .width)
-        height = try c.decode(Int.self, forKey: .height)
-        hasAudio = try c.decode(Bool.self, forKey: .hasAudio)
-        frameRate = try c.decode(Double.self, forKey: .frameRate)
-        hdr = try c.decodeIfPresent(HDRFormat.self, forKey: .hdr)
     }
 }

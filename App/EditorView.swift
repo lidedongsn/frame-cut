@@ -53,7 +53,11 @@ struct EditorView: View {
                 .overlay(Capsule().stroke(Theme.border))
                 .foregroundStyle(Theme.text)
                 .padding(.top, 52)
-                .task { try? await Task.sleep(nanoseconds: 8_000_000_000); model.notice = nil }
+                // 以提示内容为 id：新提示会重新计时，旧计时不会提前关掉新提示
+                .task(id: notice) {
+                    try? await Task.sleep(nanoseconds: 8_000_000_000)
+                    if !Task.isCancelled, model.notice == notice { model.notice = nil }
+                }
             }
         }
         .alert("提示", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {

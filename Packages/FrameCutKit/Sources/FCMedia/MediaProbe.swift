@@ -64,7 +64,7 @@ public enum MediaProbe {
         throw MediaProbeError.unsupported(name)
     }
 
-    /// 从格式描述判断 HDR：传输函数 HLG / PQ；带杜比视界配置的按杜比视界（底层多为 HLG）。
+    /// 从格式描述判断 HDR：传输函数 HLG / PQ；带杜比视界配置的按杜比视界，并区分底层 HLG / PQ。
     static func hdrFormat(_ desc: CMFormatDescription) -> HDRFormat? {
         let ext = CMFormatDescriptionGetExtensions(desc) as? [CFString: Any] ?? [:]
         let transfer = ext[kCMFormatDescriptionExtension_TransferFunction] as? String
@@ -74,7 +74,7 @@ public enum MediaProbe {
             || codec == fourCC("dvh1") || codec == fourCC("dvhe")
         let hlg = kCMFormatDescriptionTransferFunction_ITU_R_2100_HLG as String
         let pq = kCMFormatDescriptionTransferFunction_SMPTE_ST_2084_PQ as String
-        if isDolbyVision { return .dolbyVision }
+        if isDolbyVision { return transfer == pq ? .dolbyVisionPQ : .dolbyVision }
         if transfer == hlg { return .hlg }
         if transfer == pq { return .pq }
         return nil

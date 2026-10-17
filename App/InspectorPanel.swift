@@ -88,7 +88,11 @@ private struct ProjectInspector: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionTitle("色彩")
             Picker("", selection: Binding(get: { model.project.colorMode },
-                                          set: { mode in model.store.perform { $0.setColorMode(mode) } })) {
+                                          set: { mode in
+                                              // 点已选中的那一项不算手动设置，避免关掉自动切换和产生空撤销
+                                              guard mode != model.project.colorMode else { return }
+                                              model.store.perform { $0.setColorMode(mode) }
+                                          })) {
                 Text("SDR").tag(ColorMode.sdr)
                 Text("HDR").tag(ColorMode.hdr)
             }

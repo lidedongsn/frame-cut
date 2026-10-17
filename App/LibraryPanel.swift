@@ -152,7 +152,7 @@ private struct AssetCard: View {
         .draggable(AssetDrag.prefix + asset.id.uuidString)
         .help(asset.hdr.map { "\(asset.name)（\($0.displayName)）" } ?? asset.name)
         .task(id: asset.path) {
-            thumb = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: Time(seconds: min(1, asset.duration.seconds / 2)), maxHeight: 90, hdr: asset.hdr)
+            thumb = await Thumbnails.shared.thumbnail(url: asset.url, time: Time(seconds: min(1, asset.duration.seconds / 2)), maxHeight: 90, hdr: asset.hdr)
         }
     }
 }
@@ -357,7 +357,7 @@ private struct FilterTab: View {
             previews = [:]
             return
         }
-        guard let base = await ThumbnailProvider.shared.thumbnail(url: asset.url, time: clip.sourceIn + clip.sourceDuration / 2, maxHeight: 80, hdr: asset.hdr) else { return }
+        guard let base = await Thumbnails.shared.thumbnail(url: asset.url, time: clip.sourceIn + clip.sourceDuration / 2, maxHeight: 80, hdr: asset.hdr) else { return }
         var result: [FilterPreset: CGImage] = [:]
         for preset in FilterPreset.allCases {
             result[preset] = preset == .none ? base : FilterPreview.render(base, preset: preset)

@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 import FCCore
 @testable import FCMedia
@@ -50,7 +51,7 @@ final class MediaProbeTests: XCTestCase {
     }
 
     func testThumbnail() async throws {
-        let img = await ThumbnailProvider.shared.thumbnail(url: try TestMedia.url("landscape_10s.mp4"), time: Time(seconds: 2), maxHeight: 60)
+        let img = await ThumbnailProvider().thumbnail(url: try TestMedia.url("landscape_10s.mp4"), time: Time(seconds: 2), maxHeight: 60)
         XCTAssertNotNil(img)
         XCTAssertLessThanOrEqual(img!.height, 120)
     }
@@ -68,5 +69,24 @@ final class MediaProbeTests: XCTestCase {
     func testProbeSDRHasNoHDR() async throws {
         let a = try await MediaProbe.probe(url: TestMedia.url("landscape_10s.mp4"))
         XCTAssertNil(a.hdr)
+    }
+
+    /// 杜比视界要记下底层传输函数：iPhone 为 HLG，部分相机 / 流媒体为 PQ。
+    func testDolbyVisionRecordsBaseTransfer() throws {
+        func desc(_ transfer: CFString) throws -> CMFormatDescription {
+            var d: CMFormatDescription?
+            let ext: [CFString: Any] = [
+                kCMFormatDescriptionExtension_TransferFunction: transfer,
+                kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms: ["dvcC": Data(count: 24)],
+            ]
+            CMVideoFormatDescriptionCreate(allocator: nil, codecType: kCMVideoCodecType_HEVC, width: 64, height: 64,
+                                           extensions: ext as CFDictionary, formatDescriptionOut: &d)
+            return try XCTUnwrap(d)
+        }
+        XCTAssertEqual(MediaProbe.hdrFormat(try desc(kCMFormatDescriptionTransferFunction_ITU_R_2100_HLG)), .dolbyVision)
+        XCTAssertEqual(MediaProbe.hdrFormat(try desc(kCMFormatDescriptionTransferFunction_SMPTE_ST_2084_PQ)), .dolbyVisionPQ)
+        XCTAssertTrue(HDRFormat.dolbyVisionPQ.isPQ)
+        XCTAssertFalse(HDRFormat.dolbyVision.isPQ)
+        XCTAssertEqual(HDRFormat.dolbyVisionPQ.displayName, "杜比视界")
     }
 }

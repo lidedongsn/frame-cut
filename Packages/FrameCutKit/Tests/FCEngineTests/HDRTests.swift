@@ -189,12 +189,18 @@ final class HDRExportTests: XCTestCase {
 
 final class HDRThumbnailTests: XCTestCase {
     func testHDRThumbnailIsToneMapped() async throws {
-        ThumbnailProvider.hdrToneMapper = HDRThumbnail.toneMap
-        let img = await ThumbnailProvider().thumbnail(url: try TestMedia.url("hlg_bands_2s.mov"), time: Time(seconds: 0.5),
+        let img = await ThumbnailProvider(hdrToneMapper: HDRThumbnail.toneMap).thumbnail(url: try TestMedia.url("hlg_bands_2s.mov"), time: Time(seconds: 0.5),
                                                       maxHeight: 90, hdr: .hlg)
         let thumb = try XCTUnwrap(img)
         let v = bandX.map { Fixtures.pixel(thumb, x: $0, y: 0.5).0 }
         XCTAssertTrue(zip(v, v.dropFirst()).allSatisfy { $0 < $1 }, "色调映射后各亮度带应递增：\(v)")
         XCTAssertLessThan(v[2], 252, "400 尼特不应截成纯白：\(v)")
+    }
+
+    /// 色调映射失败时退回原始帧，而不是没有缩略图。
+    func testThumbnailFallsBackWhenToneMapFails() async throws {
+        let img = await ThumbnailProvider(hdrToneMapper: { _, _ in nil })
+            .thumbnail(url: try TestMedia.url("hlg_bands_2s.mov"), time: Time(seconds: 0.5), maxHeight: 90, hdr: .hlg)
+        XCTAssertNotNil(img)
     }
 }

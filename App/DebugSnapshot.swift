@@ -1,6 +1,7 @@
 import AppKit
+import FCCore
 
-/// 开发调试：`-snapshot <png 路径> [-snapshotDelay 秒] [-autoplay] [-zoomFit]` 启动后把主窗口内容存为 PNG。
+/// 开发调试：`-snapshot <png 路径> [-snapshotDelay 秒] [-autoplay] [-zoomFit] [-colorMode sdr|hdr]` 启动后把主窗口内容存为 PNG。
 enum DebugSnapshot {
     @MainActor
     static func scheduleIfRequested(app: AppModel) {
@@ -12,13 +13,16 @@ enum DebugSnapshot {
         if args.contains("-zoomFit") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { app.editor?.zoomToFit() }
         }
+        if let k = args.firstIndex(of: "-colorMode"), k + 1 < args.count, let mode = ColorMode(rawValue: args[k + 1]) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { app.editor?.store.perform { $0.setColorMode(mode) } }
+        }
         if args.contains("-autoplay") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { app.editor?.togglePlay() }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             if let editor = app.editor {
-                NSLog("FCDEBUG playhead=%.2f duration=%.2f playing=%d rate=%.1f pps=%.2f", editor.playhead.seconds, editor.duration.seconds,
-                      editor.isPlaying ? 1 : 0, editor.player.rate, editor.pointsPerSecond)
+                NSLog("FCDEBUG playhead=%.2f duration=%.2f playing=%d rate=%.1f pps=%.2f mode=%@", editor.playhead.seconds, editor.duration.seconds,
+                      editor.isPlaying ? 1 : 0, editor.player.rate, editor.pointsPerSecond, editor.project.colorMode.rawValue)
             }
             guard let view = NSApp.windows.first(where: { $0.isVisible })?.contentView,
                   let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }

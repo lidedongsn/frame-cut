@@ -470,7 +470,7 @@ private struct ThumbnailCell: View {
             }
         }
         .task(id: "\(url.path)|\(Int(time.seconds * 2))") {
-            image = await ThumbnailProvider.shared.thumbnail(url: url, time: time, maxHeight: height, hdr: hdr)
+            image = await Thumbnails.shared.thumbnail(url: url, time: time, maxHeight: height, hdr: hdr)
         }
     }
 }
