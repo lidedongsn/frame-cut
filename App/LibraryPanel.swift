@@ -96,6 +96,11 @@ private struct MediaTab: View {
                             AssetCard(asset: asset) {
                                 model.store.perform { $0.appendToMain(assetID: asset.id) }
                             }
+                            .contextMenu {
+                                Button("添加到时间线末尾") { model.store.perform { $0.appendToMain(assetID: asset.id) } }
+                                Divider()
+                                Button("从素材库删除", role: .destructive) { model.removeAsset(asset) }
+                            }
                         }
                     }
                 }
@@ -208,6 +213,9 @@ private struct AudioTab: View {
                             }
                             .padding(8)
                             .background(Theme.raised, in: RoundedRectangle(cornerRadius: 8))
+                            .contextMenu {
+                                Button("从素材库删除", role: .destructive) { model.removeAsset(asset) }
+                            }
                         }
                     }
                 }

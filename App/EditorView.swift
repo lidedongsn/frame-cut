@@ -7,22 +7,34 @@ struct EditorView: View {
     @Bindable var model: EditorModel
     @Environment(AppModel.self) private var app
     @State private var dropTargeted = false
+    @AppStorage("layout.libraryWidth") private var libraryWidth = 320.0
+    @AppStorage("layout.inspectorWidth") private var inspectorWidth = 300.0
+    @AppStorage("layout.timelineHeight") private var timelineHeight = 250.0
+    @AppStorage("layout.showLibrary") private var showLibrary = true
+    @AppStorage("layout.showInspector") private var showInspector = true
 
     var body: some View {
         VStack(spacing: 0) {
-            TopBar(model: model)
+            TopBar(model: model, showLibrary: $showLibrary, showInspector: $showInspector)
             HStack(spacing: 0) {
-                LibraryPanel(model: model)
-                    .frame(width: 320)
+                if showLibrary {
+                    LibraryPanel(model: model)
+                        .frame(width: libraryWidth)
+                    ResizeHandle(axis: .horizontal, value: $libraryWidth, range: 240...520)
+                }
                 PlayerPanel(model: model)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                InspectorPanel(model: model)
-                    .frame(width: 300)
+                    .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
+                if showInspector {
+                    ResizeHandle(axis: .horizontal, value: $inspectorWidth, range: 260...480, inverted: true)
+                    InspectorPanel(model: model)
+                        .frame(width: inspectorWidth)
+                }
             }
-            .frame(maxHeight: .infinity)
+            .frame(minHeight: 240, maxHeight: .infinity)
+            ResizeHandle(axis: .vertical, value: $timelineHeight, range: 150...560, inverted: true)
             TimelineToolbar(model: model)
             TimelineView(model: model)
-                .frame(height: 250)
+                .frame(height: timelineHeight)
         }
         .background(Theme.window)
         .overlay {
@@ -92,6 +104,8 @@ func loadFileURLs(_ providers: [NSItemProvider], completion: @escaping @MainActo
 
 private struct TopBar: View {
     @Bindable var model: EditorModel
+    @Binding var showLibrary: Bool
+    @Binding var showInspector: Bool
     @Environment(AppModel.self) private var app
 
     var body: some View {
@@ -115,6 +129,8 @@ private struct TopBar: View {
                     .foregroundStyle(Theme.tertiary)
             }
             Spacer()
+            panelToggle("sidebar.left", on: $showLibrary, help: "显示 / 隐藏素材库")
+            panelToggle("sidebar.right", on: $showInspector, help: "显示 / 隐藏属性面板")
             if model.importing {
                 ProgressView().controlSize(.small)
                 Text("正在导入…").font(.system(size: 11)).foregroundStyle(Theme.secondary)
@@ -132,6 +148,15 @@ private struct TopBar: View {
         .frame(height: 44)
         .background(Theme.panel)
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.border).frame(height: 1) }
+    }
+
+    private func panelToggle(_ icon: String, on: Binding<Bool>, help: String) -> some View {
+        Button { withAnimation(.easeOut(duration: 0.15)) { on.wrappedValue.toggle() } } label: {
+            Image(systemName: icon).font(.system(size: 14))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(on.wrappedValue ? Theme.text : Theme.tertiary)
+        .help(help)
     }
 }
 

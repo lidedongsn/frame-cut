@@ -31,7 +31,6 @@ enum TranscribeState: Equatable {
 @Observable
 @MainActor
 final class EditorModel {
-    static let previewShortSide = 720
     static let autosaveDelay: UInt64 = 2_000_000_000
 
     let store: EditorStore
@@ -115,11 +114,51 @@ final class EditorModel {
 
     // MARK: 播放
 
-    var previewSize: CGSize { RenderSize.size(aspect: project.aspect, shortSide: Self.previewShortSide) }
-    /// HDR 工程以 HLG 预览，在支持 EDR 的屏幕上显示真实亮度。
+    /// 预览渲染短边：跟随预览区实际像素，渲染跟不上时降档（上限 previewCap）。
+    private(set) var previewShortSide = 720
+    @ObservationIgnored private var previewViewPixels: Double = 720
+    @ObservationIgnored private var previewCap = PreviewQuality.tiers.last!
+    @ObservationIgnored private var qualityTask: Task<Void, Never>?
+
+    var previewSize: CGSize { RenderSize.size(aspect: project.aspect, shortSide: previewShortSide) }
+
+    /// 预览区尺寸变化（短边，物理像素）。
+    func previewViewChanged(shortSidePixels: Double) {
+        previewViewPixels = shortSidePixels
+        applyPreviewQuality()
+    }
+
+    private func applyPreviewQuality() {
+        let side = PreviewQuality.shortSide(viewPixels: previewViewPixels, cap: previewCap)
+        guard side != previewShortSide else { return }
+        previewShortSide = side
+        scheduleRebuild()
+    }
+
+    /// 播放时每 2 秒检查渲染耗时，跟不上就降一档。
+    private func startQualityMonitor() {
+        RenderTimer.preview.reset()
+        qualityTask?.cancel()
+        qualityTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                guard let self, self.isPlaying else { return }
+                guard let avg = RenderTimer.preview.averageMs else { continue }
+                let cap = PreviewQuality.capAfterMeasuring(cap: min(self.previewCap, self.previewShortSide),
+                                                           averageRenderMs: avg, frameRate: self.project.frameRate)
+                if cap < self.previewShortSide {
+                    self.previewCap = cap
+                    self.applyPreviewQuality()
+                }
+                RenderTimer.preview.reset()
+            }
+        }
+    }
+
     /// 当前播放项创建时使用的输出动态范围。
     @ObservationIgnored private var itemOutput: DynamicRangeOutput = .sdr
 
+    /// HDR 工程以 HLG 预览，在支持 EDR 的屏幕上显示真实亮度。
     var previewOutput: DynamicRangeOutput { project.colorMode == .hdr ? .hlg : .sdr }
 
     func scheduleRebuild(immediate: Bool = false) {
@@ -188,6 +227,7 @@ final class EditorModel {
             if playhead >= duration - Time(seconds: 0.05) { seek(to: .zero) }
             player.play()
             isPlaying = true
+            startQualityMonitor()
         }
     }
 
@@ -293,6 +333,7 @@ final class EditorModel {
         }
         let at = playhead
         let wasHDR = project.colorMode == .hdr
+        let wasAutoFormat = project.formatIsAutomatic
         store.perform { p in
             p.addAssets(assets)
             guard addToTimeline else { return }
@@ -304,9 +345,28 @@ final class EditorModel {
             }
         }
         if !failed.isEmpty { errorMessage = "以下文件无法导入：\(failed.joined(separator: "、"))" }
-        if !wasHDR, project.colorMode == .hdr {
-            notice = "检测到 HDR 素材，工程已切换为 HDR：预览与导出保留高光细节。可在右侧工程设置中改回 SDR。"
+        var notes: [String] = []
+        if wasAutoFormat, !project.formatIsAutomatic {
+            notes.append("已按素材设置画面为 \(project.aspect.displayName) · \(project.frameRate) fps")
         }
+        if !wasHDR, project.colorMode == .hdr {
+            notes.append("检测到 HDR 素材，工程已切换为 HDR，预览与导出保留高光细节")
+        }
+        if !notes.isEmpty { notice = notes.joined(separator: "；") + "。可在右侧工程设置中修改。" }
+    }
+
+    /// 从素材库删除素材（连同时间线上用到它的片段）。
+    func removeAsset(_ asset: MediaAsset) {
+        let used = project.mainTrack.contains { $0.assetID == asset.id } || project.musicTrack.contains { $0.assetID == asset.id }
+        if used {
+            let alert = NSAlert()
+            alert.messageText = "删除“\(asset.name)”？"
+            alert.informativeText = "时间线上用到这个素材的片段也会一起删除。可以用 ⌘Z 撤销。"
+            alert.addButton(withTitle: "删除")
+            alert.addButton(withTitle: "取消")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+        store.perform { $0.removeAsset(id: asset.id) }
     }
 
     func importPanel(addToTimeline: Bool, audioOnly: Bool = false) {

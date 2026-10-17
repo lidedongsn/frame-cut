@@ -5,6 +5,11 @@ import SwiftUI
 /// 预览区：画面 + 播放控制。
 struct PlayerPanel: View {
     @Bindable var model: EditorModel
+    @Environment(\.displayScale) private var displayScale
+
+    private func reportSize(_ size: CGSize) {
+        model.previewViewChanged(shortSidePixels: Double(min(size.width, size.height) * displayScale))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,6 +25,12 @@ struct PlayerPanel: View {
                 } else {
                     PlayerLayerView(player: model.player)
                         .aspectRatio(model.project.aspect.ratio, contentMode: .fit)
+                        // 预览渲染分辨率跟随画面实际大小（物理像素）
+                        .background(GeometryReader { g in
+                            Color.clear
+                                .onAppear { reportSize(g.size) }
+                                .onChange(of: g.size) { _, size in reportSize(size) }
+                        })
                 }
             }
             .padding(12)

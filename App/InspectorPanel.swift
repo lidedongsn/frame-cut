@@ -67,7 +67,8 @@ private struct ProjectInspector: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 6)], spacing: 6) {
                 ForEach(AspectRatio.allCases, id: \.self) { aspect in
                     Button {
-                        model.store.perform { $0.aspect = aspect }
+                        guard aspect != model.project.aspect else { return }
+                        model.store.perform { $0.setAspect(aspect) }
                     } label: {
                         VStack(spacing: 4) {
                             RoundedRectangle(cornerRadius: 2)
@@ -101,9 +102,13 @@ private struct ProjectInspector: View {
             Text(colorModeHint).font(.system(size: 11)).foregroundStyle(Theme.tertiary).fixedSize(horizontal: false, vertical: true)
         }
         VStack(alignment: .leading, spacing: 8) {
-            SectionTitle("帧率")
-            Picker("", selection: model.projectBinding(\.frameRate)) {
-                ForEach([24, 25, 30, 60], id: \.self) { Text("\($0) fps").tag($0) }
+            SectionTitle("帧率（fps）")
+            Picker("", selection: Binding(get: { model.project.frameRate },
+                                          set: { fps in
+                                              guard fps != model.project.frameRate else { return }
+                                              model.store.perform { $0.setFrameRate(fps) }
+                                          })) {
+                ForEach(Project.frameRates, id: \.self) { Text("\($0)").tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
