@@ -215,10 +215,20 @@ final class EditorModel {
 
     /// 缩放时保持在屏幕上不动的时刻（鼠标处或播放头），由时间线读取后清空。
     @ObservationIgnored var zoomAnchor: Time?
+    /// 下次缩放后滚回开头（适应窗口用）。
+    @ObservationIgnored var zoomScrollsToStart = false
+    /// 时间线可视宽度，由时间线视图写入。
+    @ObservationIgnored var timelineViewportWidth: Double = 800
 
     /// 菜单 / 滑块缩放：以播放头为锚点。
     func zoom(by factor: Double) {
         zoom(by: factor, anchor: playhead)
+    }
+
+    /// 适应窗口：整段时长铺满时间线并滚回开头。
+    func zoomToFit() {
+        zoomScrollsToStart = true
+        pointsPerSecond = TimelineZoom.fit(duration: duration, viewportWidth: timelineViewportWidth, leading: 16, trailing: 60)
     }
 
     func zoom(by factor: Double, anchor: Time) {

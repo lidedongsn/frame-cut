@@ -157,6 +157,7 @@ private struct TimelineToolbar: View {
                 .controlSize(.mini)
                 .tint(Theme.accent)
             Image(systemName: "plus.magnifyingglass").foregroundStyle(Theme.tertiary)
+            toolButton("arrow.left.and.right.square", "适应窗口 ⌘0", enabled: !model.project.mainTrack.isEmpty) { model.zoomToFit() }
         }
         .padding(.horizontal, 12)
         .frame(height: 36)

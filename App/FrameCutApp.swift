@@ -47,6 +47,7 @@ struct FrameCutApp: App {
                 Divider()
                 Button("放大时间线") { app.editor?.zoom(by: 1.4) }.keyboardShortcut("=").disabled(app.editor == nil)
                 Button("缩小时间线") { app.editor?.zoom(by: 1 / 1.4) }.keyboardShortcut("-").disabled(app.editor == nil)
+                Button("时间线适应窗口") { app.editor?.zoomToFit() }.keyboardShortcut("0").disabled(app.editor == nil)
                 Divider()
                 Button("导出…") { app.editor?.showExport = true }.keyboardShortcut("e").disabled(app.editor == nil)
             }

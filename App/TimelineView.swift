@@ -77,8 +77,8 @@ struct TimelineView: View {
                 }
                 .coordinateSpace(name: "timeline")
                 .onPreferenceChange(ScrollXKey.self) { scrollX = $0 }
-                .onAppear { viewportWidth = geo.size.width }
-                .onChange(of: geo.size.width) { _, w in viewportWidth = w }
+                .onAppear { viewportWidth = geo.size.width; model.timelineViewportWidth = geo.size.width }
+                .onChange(of: geo.size.width) { _, w in viewportWidth = w; model.timelineViewportWidth = w }
                 .onChange(of: model.playhead) { _, t in
                     guard model.isPlaying else { return }
                     let px = x(t)
@@ -234,8 +234,10 @@ private struct ZoomEventCatcher: NSViewRepresentable {
             let anchor = model.zoomAnchor ?? model.playhead
             model.zoomAnchor = nil
             let clip = scrollView.contentView
-            let origin = TimelineZoom.scrollOrigin(anchor: anchor, oldPointsPerSecond: old, newPointsPerSecond: pps,
-                                                   oldOrigin: Double(clip.bounds.origin.x), leading: Double(TL.leading))
+            let origin = model.zoomScrollsToStart ? 0
+                : TimelineZoom.scrollOrigin(anchor: anchor, oldPointsPerSecond: old, newPointsPerSecond: pps,
+                                            oldOrigin: Double(clip.bounds.origin.x), leading: Double(TL.leading))
+            model.zoomScrollsToStart = false
             // 等 SwiftUI 按新宽度布局后再滚动
             DispatchQueue.main.async {
                 clip.scroll(to: NSPoint(x: CGFloat(origin), y: clip.bounds.origin.y))
@@ -258,8 +260,8 @@ private struct RulerView: View {
 
     var body: some View {
         Canvas { ctx, size in
-            let candidates: [Double] = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300]
-            let major = candidates.first { $0 * Double(pps) >= 80 } ?? 600
+            let candidates: [Double] = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1200]
+            let major = candidates.first { $0 * Double(pps) >= 80 } ?? 1800
             let minor = major / 5
             let ticksPerMajor = 5
             var i = 0

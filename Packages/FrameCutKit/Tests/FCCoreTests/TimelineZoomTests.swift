@@ -16,9 +16,26 @@ final class TimelineZoomTests: XCTestCase {
     }
 
     func testClampedZoom() {
-        XCTAssertEqual(TimelineZoom.clamped(1000), TimelineZoom.maxPointsPerSecond)
-        XCTAssertEqual(TimelineZoom.clamped(1), TimelineZoom.minPointsPerSecond)
+        XCTAssertEqual(TimelineZoom.clamped(100_000), TimelineZoom.maxPointsPerSecond)
+        XCTAssertEqual(TimelineZoom.clamped(0.01), TimelineZoom.minPointsPerSecond)
         XCTAssertEqual(TimelineZoom.clamped(60), 60)
+    }
+
+    /// 缩到最小时，20 分钟的视频能放进约 1200pt 宽的时间线。
+    func testZoomOutFitsLongVideo() {
+        XCTAssertLessThanOrEqual(TimelineZoom.minPointsPerSecond * 20 * 60, 1200)
+    }
+
+    /// 放到最大时，30fps 下每帧至少 30pt，可以逐帧对齐。
+    func testZoomInReachesFrameLevel() {
+        XCTAssertGreaterThanOrEqual(TimelineZoom.maxPointsPerSecond / 30, 30)
+    }
+
+    /// 适应窗口：整段时长恰好铺满可视宽度（减去左右留白）。
+    func testFitToWidth() {
+        let pps = TimelineZoom.fit(duration: Time(seconds: 180), viewportWidth: 1016, leading: 16, trailing: 100)
+        XCTAssertEqual(pps, 5, accuracy: 0.001)
+        XCTAssertEqual(TimelineZoom.fit(duration: .zero, viewportWidth: 1000, leading: 16, trailing: 100), 60)
     }
 
     func testScrollWheelFactor() {
