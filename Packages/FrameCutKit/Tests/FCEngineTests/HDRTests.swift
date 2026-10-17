@@ -100,6 +100,16 @@ final class HDRRenderTests: XCTestCase {
         assertToneMapped(v)
     }
 
+    /// HDR 工程导出 SDR：普通（SDR）素材不应被色调映射压暗，与 SDR 工程输出一致。
+    func testSDRClipUnchangedWhenHDRProjectExportsSDR() async throws {
+        let src = try await HDRFixtures.firstFrame("landscape_10s.mp4")
+        let inSDR = HDRFixtures.bands(HDRFixtures.instruction(colorMode: .sdr, output: .sdr, isHDR: false), source: src)
+        let inHDR = HDRFixtures.bands(HDRFixtures.instruction(colorMode: .hdr, output: .sdr, isHDR: false), source: src)
+        for (a, b) in zip(inSDR, inHDR) {
+            XCTAssertEqual(a, b, accuracy: 0.02, "SDR 工程 \(inSDR) vs HDR 工程 \(inHDR)")
+        }
+    }
+
     func testSDRProjectToneMapsHDRSource() async throws {
         let src = try await HDRFixtures.firstFrame("hlg_bands_2s.mov")
         let v = HDRFixtures.bands(HDRFixtures.instruction(colorMode: .sdr, output: .sdr), source: src)

@@ -117,6 +117,9 @@ final class EditorModel {
 
     var previewSize: CGSize { RenderSize.size(aspect: project.aspect, shortSide: Self.previewShortSide) }
     /// HDR 工程以 HLG 预览，在支持 EDR 的屏幕上显示真实亮度。
+    /// 当前播放项创建时使用的输出动态范围。
+    @ObservationIgnored private var itemOutput: DynamicRangeOutput = .sdr
+
     var previewOutput: DynamicRangeOutput { project.colorMode == .hdr ? .hlg : .sdr }
 
     func scheduleRebuild(immediate: Bool = false) {
@@ -139,8 +142,10 @@ final class EditorModel {
             playhead = .zero
             return
         }
-        if let built, built.structureKey == CompositionBuilder.structureKey(project), let item = player.currentItem {
-            item.videoComposition = built.makeVideoComposition(project: project, renderSize: size, output: previewOutput)
+        let output = previewOutput
+        if let built, let item = player.currentItem, built.canUpdateInPlace(project: project, from: itemOutput, to: output) {
+            itemOutput = output
+            item.videoComposition = built.makeVideoComposition(project: project, renderSize: size, output: output)
             item.audioMix = built.makeAudioMix(project: project)
             if !isPlaying { seek(to: playhead) }
             return
@@ -149,7 +154,8 @@ final class EditorModel {
             let next = try await CompositionBuilder.build(project: project, renderSize: size)
             guard !Task.isCancelled, project == store.project else { return }
             let item = AVPlayerItem(asset: next.composition)
-            item.videoComposition = next.makeVideoComposition(project: project, renderSize: size, output: previewOutput)
+            item.videoComposition = next.makeVideoComposition(project: project, renderSize: size, output: output)
+            itemOutput = output
             item.audioMix = next.makeAudioMix(project: project)
             item.audioTimePitchAlgorithm = .spectral
             built = next

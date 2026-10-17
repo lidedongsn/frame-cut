@@ -56,7 +56,10 @@ final class FrameRenderer: @unchecked Sendable {
             guard var image = sourceImage(layer, source: source) else { return black }
             // SDR 工程中的 HDR 素材：先色调映射，再按 SDR 调色
             if !hdrProject && layer.isHDR { image = ToneMap.apply(image) }
-            return Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: grading).cropped(to: rect).composited(over: black)
+            image = Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: grading)
+            // HDR 工程输出 SDR：只映射 HDR 素材（调色之后），普通素材保持原亮度
+            if hdrProject && !instruction.output.isHDR && layer.isHDR { image = ToneMap.apply(image) }
+            return image.cropped(to: rect).composited(over: black)
         }
         var frame: CIImage
         if let t = instruction.transition, layers.count == 2, t.duration > .zero {
@@ -65,8 +68,6 @@ final class FrameRenderer: @unchecked Sendable {
         } else {
             frame = layers.last ?? black
         }
-        // HDR 工程输出 SDR：整帧色调映射（字幕在参考白以内，之后叠加）
-        if hdrProject && !instruction.output.isHDR { frame = ToneMap.apply(frame) }
         for sub in instruction.scene.activeSubtitles(at: time) {
             guard let text = SubtitleRenderer.image(text: sub.text, style: instruction.scene.style, canvas: canvas) else { continue }
             let cx = (canvas.width - text.extent.width) / 2

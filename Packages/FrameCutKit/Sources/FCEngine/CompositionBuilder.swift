@@ -45,6 +45,11 @@ public final class BuiltComposition: @unchecked Sendable {
         self.musicTracks = musicTracks
     }
 
+    /// 已有播放项能否只替换视频指令与混音：结构未变，且输出 SDR / HDR 不变（合成器类在播放项创建后无法更换）。
+    public func canUpdateInPlace(project: Project, from current: DynamicRangeOutput, to next: DynamicRangeOutput) -> Bool {
+        current.isHDR == next.isHDR && structureKey == CompositionBuilder.structureKey(project)
+    }
+
     // MARK: 视频合成指令
 
     public func makeVideoComposition(project: Project, renderSize: CGSize, output: DynamicRangeOutput = .sdr) -> AVMutableVideoComposition {

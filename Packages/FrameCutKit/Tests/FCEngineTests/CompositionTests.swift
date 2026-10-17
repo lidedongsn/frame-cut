@@ -154,4 +154,17 @@ final class CompositionTests: XCTestCase {
         p.setSpeed(id: p.mainTrack[0].id, 2)
         XCTAssertNotEqual(CompositionBuilder.structureKey(p), k1)
     }
+
+    /// 切换 SDR / HDR 预览需要换合成器类，已有 AVPlayerItem 不能原地更新。
+    func testColorModeSwitchNeedsNewPlayerItem() async throws {
+        let p = try await Fixtures.project(["landscape_10s.mp4"])
+        let built = try await CompositionBuilder.build(project: p, renderSize: CGSize(width: 640, height: 360))
+        XCTAssertTrue(built.canUpdateInPlace(project: p, from: .sdr, to: .sdr))
+        XCTAssertFalse(built.canUpdateInPlace(project: p, from: .sdr, to: .hlg))
+        XCTAssertFalse(built.canUpdateInPlace(project: p, from: .hlg, to: .sdr))
+        XCTAssertTrue(built.canUpdateInPlace(project: p, from: .hlg, to: .pq))
+        var q = p
+        q.setSpeed(id: q.mainTrack[0].id, 2)
+        XCTAssertFalse(built.canUpdateInPlace(project: q, from: .sdr, to: .sdr))
+    }
 }
