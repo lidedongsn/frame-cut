@@ -21,16 +21,32 @@ enum GradingSpace: String, Sendable {
 enum FilterLUT {
     static let dimension = 33
     private static let lock = NSLock()
-    private static var cache: [String: Data] = [:]
+    nonisolated(unsafe) private static var cache = LRUCache<String, Data>(capacity: 64)
 
+    private static func key(_ s: FilterSettings, _ space: GradingSpace) -> String {
+        "\(space.rawValue)|\(s.preset.rawValue)|\(s.intensity)|\(s.brightness)|\(s.contrast)|\(s.saturation)|\(s.temperature)"
+    }
+
+    private static func quantized(_ f: FilterSettings) -> FilterSettings {
+        FilterSettings.quantized(f) { v, step in (v / step).rounded() * step }
+    }
+
+    static func isCached(_ f: FilterSettings, space: GradingSpace) -> Bool {
+        lock.withLock { cache.contains(key(quantized(f), space)) }
+    }
+
+    /// 锁只保护缓存读写；LUT 在锁外计算，渲染线程不会被正在拖动的滑块阻塞。
     static func data(_ f: FilterSettings, space: GradingSpace) -> Data? {
         guard !f.isIdentity else { return nil }
-        func q(_ v: Double, _ step: Double) -> Double { (v / step).rounded() * step }
-        let s = FilterSettings.quantized(f, q)
-        let key = "\(space.rawValue)|\(s.preset.rawValue)|\(s.intensity)|\(s.brightness)|\(s.contrast)|\(s.saturation)|\(s.temperature)"
-        lock.lock()
-        defer { lock.unlock() }
-        if let hit = cache[key] { return hit }
+        let s = quantized(f)
+        let key = key(s, space)
+        if let hit = lock.withLock({ cache[key] }) { return hit }
+        let data = build(s, space)
+        lock.withLock { cache[key] = data }
+        return data
+    }
+
+    private static func build(_ s: FilterSettings, _ space: GradingSpace) -> Data {
         let n = dimension
         let k = s.preset == .none ? 0 : min(1, s.intensity)
         var values = [Float](repeating: 0, count: n * n * n * 4)
@@ -50,10 +66,7 @@ enum FilterLUT {
                 }
             }
         }
-        let data = values.withUnsafeBufferPointer { Data(buffer: $0) }
-        if cache.count > 64 { cache.removeAll() }
-        cache[key] = data
-        return data
+        return values.withUnsafeBufferPointer { Data(buffer: $0) }
     }
 
     /// 调节参数（-1...1）作用于编码后的信号值。
