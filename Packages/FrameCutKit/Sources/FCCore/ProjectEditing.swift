@@ -179,18 +179,52 @@ extension Project {
 
     public var hasHDRAssets: Bool { assets.contains { $0.hdr != nil } }
 
-    /// 追加素材（按 id 去重）；自动模式下遇到 HDR 素材切到 HDR 工程。
+    /// 追加素材（按 id 去重）。时间线为空时画幅与帧率跟随第一个视频 / 图片；色彩模式跟随素材。
     public mutating func addAssets(_ newAssets: [MediaAsset]) {
         for asset in newAssets where !assets.contains(where: { $0.id == asset.id }) {
             assets.append(asset)
         }
-        if colorModeIsAutomatic, hasHDRAssets { colorMode = .hdr }
+        if formatIsAutomatic, mainTrack.isEmpty, let first = newAssets.first(where: { $0.kind != .audio && $0.width > 0 }) {
+            aspect = AspectRatio.nearest(width: first.width, height: first.height)
+            if first.kind == .video { frameRate = Self.nearestFrameRate(first.frameRate) }
+            formatIsAutomatic = false
+        }
+        updateAutomaticColorMode()
+    }
+
+    /// 从素材库删除素材及其在时间线上的所有片段。
+    public mutating func removeAsset(id: UUID) {
+        for clip in mainTrack where clip.assetID == id { removeMain(id: clip.id) }
+        musicTrack.removeAll { $0.assetID == id }
+        assets.removeAll { $0.id == id }
+        updateAutomaticColorMode()
+    }
+
+    private mutating func updateAutomaticColorMode() {
+        if colorModeIsAutomatic { colorMode = hasHDRAssets ? .hdr : .sdr }
     }
 
     /// 用户手动设置色彩模式，之后不再自动切换。
     public mutating func setColorMode(_ mode: ColorMode) {
         colorMode = mode
         colorModeIsAutomatic = false
+    }
+
+    /// 用户手动设置画幅 / 帧率，之后不再跟随素材。
+    public mutating func setAspect(_ value: AspectRatio) {
+        aspect = value
+        formatIsAutomatic = false
+    }
+
+    public mutating func setFrameRate(_ value: Int) {
+        frameRate = value
+        formatIsAutomatic = false
+    }
+
+    /// 素材帧率 → 最接近的工程帧率（23.976→24，29.97→30，高帧率慢动作→60）。
+    public static func nearestFrameRate(_ fps: Double) -> Int {
+        guard fps > 0 else { return 30 }
+        return frameRates.min { abs(Double($0) - fps) < abs(Double($1) - fps) } ?? 30
     }
 
     public func missingAssets(fileExists: (String) -> Bool) -> [MediaAsset] {

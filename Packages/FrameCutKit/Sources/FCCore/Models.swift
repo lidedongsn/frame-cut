@@ -5,6 +5,13 @@ import Foundation
 public enum AspectRatio: String, Codable, CaseIterable, Sendable {
     case r16x9, r9x16, r1x1, r4x3, r3x4
 
+    /// 与素材宽高比最接近的画幅（按对数比较，横竖对称）。
+    public static func nearest(width: Int, height: Int) -> AspectRatio {
+        guard width > 0, height > 0 else { return .r16x9 }
+        let r = log(Double(width) / Double(height))
+        return allCases.min { abs(log($0.ratio) - r) < abs(log($1.ratio) - r) } ?? .r16x9
+    }
+
     /// 宽 / 高
     public var ratio: Double {
         switch self {
@@ -50,8 +57,13 @@ public struct Project: Codable, Equatable, Sendable {
     public var subtitles: [Subtitle] = []
     public var subtitleStyle = SubtitleStyle()
     public var colorMode: ColorMode = .sdr
-    /// 为 true 时导入 HDR 素材会自动切到 HDR；用户手动设置后为 false。
+    /// 为 true 时色彩模式跟随素材（有 HDR 素材即 HDR）；用户手动设置后为 false。
     public var colorModeIsAutomatic = true
+    /// 为 true 时画幅与帧率跟随第一个导入的视频 / 图片；用户手动设置后为 false。
+    public var formatIsAutomatic = true
+
+    /// 工程可选帧率。
+    public static let frameRates = [24, 25, 30, 50, 60]
 
     public init(name: String) {
         self.name = name
@@ -320,5 +332,7 @@ extension Project {
         subtitleStyle = try c.decode(SubtitleStyle.self, forKey: .subtitleStyle)
         colorMode = try c.decodeIfPresent(ColorMode.self, forKey: .colorMode) ?? .sdr
         colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
+        // 旧工程的画幅 / 帧率可能是手动设的
+        formatIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .formatIsAutomatic) ?? false
     }
 }

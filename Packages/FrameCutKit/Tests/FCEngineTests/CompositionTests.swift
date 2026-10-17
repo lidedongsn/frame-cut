@@ -8,7 +8,7 @@ import XCTest
 enum Fixtures {
     static func project(_ files: [String], aspect: AspectRatio = .r16x9) async throws -> Project {
         var p = Project(name: "test")
-        p.aspect = aspect
+        p.setAspect(aspect)
         for f in files {
             let asset = try await MediaProbe.probe(url: TestMedia.url(f))
             if !p.assets.contains(where: { $0.path == asset.path }) { p.addAssets([asset]) }

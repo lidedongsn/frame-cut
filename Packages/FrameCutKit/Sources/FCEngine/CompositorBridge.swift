@@ -48,7 +48,9 @@ class CompositorBridge: NSObject, AVVideoCompositing {
                 return
             }
             do {
+                let start = DispatchTime.now().uptimeNanoseconds
                 let buffer = try FrameRenderer.shared.render(request)
+                RenderTimer.preview.record(ms: Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
                 request.finish(withComposedVideoFrame: buffer)
             } catch {
                 request.finish(with: error)
