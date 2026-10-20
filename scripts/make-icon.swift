@@ -13,15 +13,36 @@ func color(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> CGColo
 /// 竖向渐变：逐行填纯色。系统的 CGGradient 会加抖动噪点，PNG 几乎压不动（1024 图从约 50KB 涨到 600KB+）。
 func fillVertical(_ ctx: CGContext, _ area: CGRect, top: (CGFloat, CGFloat, CGFloat), bottom: (CGFloat, CGFloat, CGFloat)) {
     // 对齐整数像素并关闭色带抗锯齿：否则每条色带半盖两行像素，与底色叠加后整体发暗（边缘抗锯齿由裁切路径保留）
-    let rect = area.integral
+    // 按实际像素行填色：缩小渲染时若按 1024 坐标逐行画，多条半透明色带会落在同一像素行上反复叠加
+    let px = ctx.ctm.d
+    let rect = area.applying(CGAffineTransform(scaleX: px, y: px)).integral.applying(CGAffineTransform(scaleX: 1 / px, y: 1 / px))
     ctx.saveGState()
     defer { ctx.restoreGState() }
     ctx.setShouldAntialias(false)
-    let rows = Int(rect.height)
+    let rows = max(1, Int((rect.height * px).rounded()))
+    let rowHeight = rect.height / CGFloat(rows)
     for i in 0..<rows {
         let t = CGFloat(i) / CGFloat(max(1, rows - 1))
         ctx.setFillColor(color(bottom.0 + (top.0 - bottom.0) * t, bottom.1 + (top.1 - bottom.1) * t, bottom.2 + (top.2 - bottom.2) * t))
-        ctx.fill(CGRect(x: rect.minX, y: rect.minY + CGFloat(i), width: rect.width, height: 1))
+        ctx.fill(CGRect(x: rect.minX, y: rect.minY + CGFloat(i) * rowHeight, width: rect.width, height: rowHeight))
+    }
+}
+
+/// 竖向渐变（带透明度）：用于高光、光泽等叠加层。
+func fillVerticalAlpha(_ ctx: CGContext, _ area: CGRect, top: (CGFloat, CGFloat, CGFloat, CGFloat), bottom: (CGFloat, CGFloat, CGFloat, CGFloat)) {
+    // 按实际像素行填色：缩小渲染时若按 1024 坐标逐行画，多条半透明色带会落在同一像素行上反复叠加
+    let px = ctx.ctm.d
+    let rect = area.applying(CGAffineTransform(scaleX: px, y: px)).integral.applying(CGAffineTransform(scaleX: 1 / px, y: 1 / px))
+    ctx.saveGState()
+    defer { ctx.restoreGState() }
+    ctx.setShouldAntialias(false)
+    let rows = max(1, Int((rect.height * px).rounded()))
+    let rowHeight = rect.height / CGFloat(rows)
+    for i in 0..<rows {
+        let t = CGFloat(i) / CGFloat(max(1, rows - 1))
+        func m(_ a: CGFloat, _ b: CGFloat) -> CGFloat { b + (a - b) * t }
+        ctx.setFillColor(color(m(top.0, bottom.0), m(top.1, bottom.1), m(top.2, bottom.2), m(top.3, bottom.3)))
+        ctx.fill(CGRect(x: rect.minX, y: rect.minY + CGFloat(i) * rowHeight, width: rect.width, height: rowHeight))
     }
 }
 
@@ -47,18 +68,51 @@ func squircle(_ r: CGRect, extent e: CGFloat = 0.33, n: CGFloat = 4.2) -> CGPath
     return path
 }
 
-/// 前景元素：先画柔和投影（光从上方来），再用竖向渐变填充。
-func drawRaised(_ ctx: CGContext, _ path: CGPath, top: (CGFloat, CGFloat, CGFloat), bottom: (CGFloat, CGFloat, CGFloat), lift: CGFloat = 1) {
+/// 玻璃质感的前景元素（光从上方来）：
+/// 投影 + 同色柔光 → 彩色玻璃主体（上亮下暗）→ 顶边反光 → 上半部光泽 → 底边暗部 → 细亮边。
+func drawGlass(_ ctx: CGContext, _ shape: CGPath, top: (CGFloat, CGFloat, CGFloat), bottom: (CGFloat, CGFloat, CGFloat), scale k: CGFloat = 1) {
+    // 合并自相交 / 重叠的子路径（如描边的拐角），否则布尔运算出的高光会有杂线
+    let path = shape.normalized()
+    let box = path.boundingBoxOfPath
+    // 投影与同色柔光
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -10 * lift), blur: 22 * lift, color: color(0, 0, 0, 0.5))
+    ctx.setShadow(offset: CGSize(width: 0, height: -14 * k), blur: 26 * k, color: color(0, 0, 0, 0.65))
     ctx.addPath(path)
     ctx.setFillColor(color(bottom.0, bottom.1, bottom.2))
     ctx.fillPath()
     ctx.restoreGState()
     ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: -4 * k), blur: 36 * k, color: color(bottom.0, bottom.1, bottom.2, 0.35))
+    ctx.addPath(path)
+    ctx.setFillColor(color(bottom.0, bottom.1, bottom.2))
+    ctx.fillPath()
+    ctx.restoreGState()
+
+    ctx.saveGState()
     ctx.addPath(path)
     ctx.clip()
-    fillVertical(ctx, path.boundingBoxOfPath.insetBy(dx: -2, dy: -2), top: top, bottom: bottom)
+    // 主体：保持原色饱和度，顶部略亮
+    fillVertical(ctx, box.insetBy(dx: -2, dy: -2), top: top, bottom: bottom)
+    // 上半部光泽：从顶部白色半透明柔和渐隐
+    let gloss = CGRect(x: box.minX - 2, y: box.minY + box.height * 0.42, width: box.width + 4, height: box.height * 0.58 + 2)
+    fillVerticalAlpha(ctx, gloss, top: (1, 1, 1, 0.30), bottom: (1, 1, 1, 0))
+    // 顶边反光：形状减去自身下移后的部分，得到贴着上沿的一道细亮边
+    var down = CGAffineTransform(translationX: 0, y: -4 * k)
+    ctx.addPath(path.subtracting(path.copy(using: &down)!))
+    ctx.setFillColor(color(1, 1, 1, 0.55))
+    ctx.fillPath()
+    // 底边轻微暗部（玻璃厚度）
+    var up = CGAffineTransform(translationX: 0, y: 4 * k)
+    ctx.addPath(path.subtracting(path.copy(using: &up)!))
+    ctx.setFillColor(color(0, 0, 0, 0.12))
+    ctx.fillPath()
+    ctx.restoreGState()
+
+    // 细亮边（玻璃边缘）
+    ctx.saveGState()
+    ctx.addPath(path.copy(strokingWithWidth: 2.5 * k, lineCap: .round, lineJoin: .round, miterLimit: 10))
+    ctx.clip()
+    fillVerticalAlpha(ctx, box.insetBy(dx: -4, dy: -4), top: (1, 1, 1, 0.45), bottom: (1, 1, 1, 0.05))
     ctx.restoreGState()
 }
 
@@ -81,6 +135,10 @@ func drawIcon(_ ctx: CGContext, detail: Bool) {
     ctx.addPath(bodyPath)
     ctx.clip()
     fillVertical(ctx, body, top: (0.18, 0.18, 0.20), bottom: (0.067, 0.067, 0.078))
+    // 玻璃板顶部反光带
+    fillVerticalAlpha(ctx, CGRect(x: body.minX, y: body.maxY - 300, width: body.width, height: 300), top: (1, 1, 1, 0.10), bottom: (1, 1, 1, 0))
+    // 底部内阴影，让板子有厚度
+    fillVerticalAlpha(ctx, CGRect(x: body.minX, y: body.minY, width: body.width, height: 160), top: (0, 0, 0, 0), bottom: (0, 0, 0, 0.30))
     // 顶边高光：一圈细亮边，越往下越淡
     ctx.addPath(bodyPath.copy(strokingWithWidth: 6, lineCap: .round, lineJoin: .round, miterLimit: 10))
     ctx.clip()
@@ -99,7 +157,7 @@ func drawIcon(_ ctx: CGContext, detail: Bool) {
         }
         let stroke = corners.copy(strokingWithWidth: w, lineCap: .round, lineJoin: .round, miterLimit: 10)
         // 强调青：顶部略提亮表现受光，主体就是界面的强调色
-        drawRaised(ctx, stroke, top: (0.36, 0.92, 0.94), bottom: (0.16, 0.82, 0.86), lift: 0.6)
+        drawGlass(ctx, stroke, top: (0.45, 0.94, 0.96), bottom: (0.16, 0.82, 0.86), scale: 0.7)
     }
 
     drawMonogram(ctx, cut: detail)
@@ -138,13 +196,13 @@ func drawMonogram(_ ctx: CGContext, cut: Bool) {
     var tc = CGAffineTransform(translationX: x0 + fb.width + kerning - cb.minX, y: y0 - cb.minY)
     let fPath = f.copy(using: &tf)!, cPath = c.copy(using: &tc)!
 
-    let white = ((CGFloat(1), CGFloat(1), CGFloat(1)), (CGFloat(0.84), CGFloat(0.84), CGFloat(0.86)))
+    let white = ((CGFloat(1), CGFloat(1), CGFloat(1)), (CGFloat(0.88), CGFloat(0.89), CGFloat(0.91)))
     // 播放头黄：顶部略亮，底部就是界面的播放头色
     let yellow = ((CGFloat(1), CGFloat(0.92), CGFloat(0.45)), (CGFloat(1), CGFloat(0.85), CGFloat(0.25)))
-    drawRaised(ctx, fPath, top: white.0, bottom: white.1)
+    drawGlass(ctx, fPath, top: white.0, bottom: white.1)
 
     guard cut else {
-        drawRaised(ctx, cPath, top: yellow.0, bottom: yellow.1)
+        drawGlass(ctx, cPath, top: yellow.0, bottom: yellow.1)
         return
     }
     // 用路径布尔运算把 C 沿斜线分成两块，各自错开一点
@@ -162,7 +220,7 @@ func drawMonogram(_ ctx: CGContext, cut: Bool) {
         half.closeSubpath()
         var move = CGAffineTransform(translationX: normal.x * shift * side, y: normal.y * shift * side)
         let piece = cPath.intersection(half).copy(using: &move)!
-        drawRaised(ctx, piece, top: yellow.0, bottom: yellow.1)
+        drawGlass(ctx, piece, top: yellow.0, bottom: yellow.1)
     }
 }
 
