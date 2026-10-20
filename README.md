@@ -7,6 +7,8 @@
 <p align="center"><b>为 Apple 芯片 Mac 打造的 vlog 剪辑软件</b><br>
 免费 · 无水印 · 全部本地运行 · 安装包仅 2.3 MB</p>
 
+<p align="center">中文 · <a href="README.en.md">English</a></p>
+
 ---
 
 拍完一段旅行、一顿饭、一个周末，想剪成 3 分钟的 vlog：分割、调色、加转场、配音乐、上字幕，然后导出发布。
