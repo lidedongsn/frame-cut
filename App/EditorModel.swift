@@ -184,7 +184,7 @@ final class EditorModel {
         let output = previewOutput
         if let built, let item = player.currentItem, built.canUpdateInPlace(project: project, from: itemOutput, to: output) {
             itemOutput = output
-            item.videoComposition = built.makeVideoComposition(project: project, renderSize: size, output: output)
+            item.videoComposition = built.makeVideoComposition(project: renderProject(project), renderSize: size, output: output)
             item.audioMix = built.makeAudioMix(project: project)
             if !isPlaying { seek(to: playhead) }
             return
@@ -193,7 +193,7 @@ final class EditorModel {
             let next = try await CompositionBuilder.build(project: project, renderSize: size)
             guard !Task.isCancelled, project == store.project else { return }
             let item = AVPlayerItem(asset: next.composition)
-            item.videoComposition = next.makeVideoComposition(project: project, renderSize: size, output: output)
+            item.videoComposition = next.makeVideoComposition(project: renderProject(project), renderSize: size, output: output)
             itemOutput = output
             item.audioMix = next.makeAudioMix(project: project)
             item.audioTimePitchAlgorithm = .spectral
@@ -306,6 +306,30 @@ final class EditorModel {
             }
         }
         self.selection = nil
+    }
+
+    // MARK: 调色工作流
+
+    /// 复制的调色（复制 / 粘贴调色）。
+    var copiedFilter: FilterSettings?
+    /// 按住“对比”时预览不带调色的原图。
+    var comparingOriginal = false {
+        didSet { if comparingOriginal != oldValue { scheduleRebuild(immediate: true) } }
+    }
+
+    private func renderProject(_ p: Project) -> Project {
+        comparingOriginal ? p.withoutGrading() : p
+    }
+
+    func copyGrade() {
+        guard let clip = selectedClip else { return }
+        copiedFilter = clip.filter
+        notice = "已复制调色。选中其他片段后按 ⌥⌘V 粘贴。"
+    }
+
+    func pasteGrade() {
+        guard let filter = copiedFilter, let clip = selectedClip else { return }
+        store.perform { $0.applyFilter(filter, to: [clip.id]) }
     }
 
     var selectedClip: VideoClip? {

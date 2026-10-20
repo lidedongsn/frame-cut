@@ -1,3 +1,4 @@
+import FCCore
 import FCEngine
 import FCMedia
 import SwiftUI
@@ -44,6 +45,12 @@ struct FrameCutApp: App {
             CommandMenu("剪辑") {
                 Button("分割") { app.editor?.splitAtPlayhead() }.keyboardShortcut("b").disabled(app.editor == nil)
                 Button("删除所选") { app.editor?.deleteSelection() }.disabled(app.editor?.selection == nil)
+                Divider()
+                Button("复制调色") { app.editor?.copyGrade() }
+                    .keyboardShortcut("c", modifiers: [.command, .option]).disabled(app.editor?.selectedClip == nil)
+                Button("粘贴调色") { app.editor?.pasteGrade() }
+                    .keyboardShortcut("v", modifiers: [.command, .option])
+                    .disabled(app.editor?.selectedClip == nil || app.editor?.copiedFilter == nil)
                 Divider()
                 Button("放大时间线") { app.editor?.zoom(by: 1.4) }.keyboardShortcut("=").disabled(app.editor == nil)
                 Button("缩小时间线") { app.editor?.zoom(by: 1 / 1.4) }.keyboardShortcut("-").disabled(app.editor == nil)
@@ -92,4 +99,10 @@ struct RootView: View {
 /// 应用共用的缩略图提供者，HDR 帧按成片同样的方式色调映射。
 enum Thumbnails {
     static let shared = ThumbnailProvider(hdrToneMapper: HDRThumbnail.toneMap)
+}
+
+/// 应用共用的调色预设库。
+@MainActor
+enum GradePresets {
+    static let store = GradePresetStore()
 }

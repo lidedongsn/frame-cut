@@ -317,6 +317,8 @@ private struct FilterTab: View {
     @State private var previews: [FilterPreset: CGImage] = [:]
     @State private var lutPreviews: [UUID: CGImage] = [:]
     @State private var luts: [UserLUTRef] = UserLUTLibrary.shared.all
+    @State private var presets: [GradePreset] = GradePresets.store.presets
+    @State private var presetPreviews: [UUID: CGImage] = [:]
 
     private var clip: VideoClip? { model.selectedClip }
     private var sampleClip: VideoClip? { clip ?? model.project.mainTrack.first }
@@ -333,6 +335,34 @@ private struct FilterTab: View {
                             tile(preset.displayName, image: previews[preset],
                                  selected: clip?.filter.lut == nil && clip?.filter.preset == preset) {
                                 apply { $0.selectPreset(preset) }
+                            }
+                        }
+                    }
+                    HStack {
+                        SectionTitle("我的预设")
+                        Spacer()
+                        Button("保存当前调色…") { savePreset() }
+                            .buttonStyle(.plain).font(.system(size: 11))
+                            .foregroundStyle(canSavePreset ? Theme.accent : Theme.tertiary)
+                            .disabled(!canSavePreset)
+                            .help("把所选片段的风格、调节、HSL 和效果存为预设，所有工程通用")
+                    }
+                    if presets.isEmpty {
+                        Text("调好一个片段后点「保存当前调色」，下次一键套用。")
+                            .font(.system(size: 11)).foregroundStyle(Theme.tertiary).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 8)], spacing: 10) {
+                            ForEach(presets) { preset in
+                                tile(preset.name, image: presetPreviews[preset.id], selected: clip?.filter == preset.filter) {
+                                    apply { $0 = preset.filter }
+                                }
+                                .contextMenu {
+                                    Button("重命名…") { renamePreset(preset) }
+                                    Button("删除预设", role: .destructive) {
+                                        try? GradePresets.store.delete(preset.id)
+                                        presets = GradePresets.store.presets
+                                    }
+                                }
                             }
                         }
                     }
@@ -400,6 +430,38 @@ private struct FilterTab: View {
         .buttonStyle(.plain)
     }
 
+    private var canSavePreset: Bool { !(clip?.filter.isIdentity ?? true) }
+
+    private func askName(title: String, initial: String) -> String? {
+        let alert = NSAlert()
+        alert.messageText = title
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.stringValue = initial
+        field.placeholderString = "例如：海边清透、夜景电影感"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "保存")
+        alert.addButton(withTitle: "取消")
+        alert.window.initialFirstResponder = field
+        return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
+    }
+
+    private func savePreset() {
+        guard let filter = clip?.filter, let name = askName(title: "保存调色预设", initial: "") else { return }
+        do {
+            try GradePresets.store.save(name: name, filter: filter)
+        } catch {
+            model.errorMessage = "预设保存失败：\(error.localizedDescription)"
+        }
+        presets = GradePresets.store.presets
+        Task { await loadPreviews() }
+    }
+
+    private func renamePreset(_ preset: GradePreset) {
+        guard let name = askName(title: "重命名预设", initial: preset.name) else { return }
+        try? GradePresets.store.rename(preset.id, to: name)
+        presets = GradePresets.store.presets
+    }
+
     private func importLUT() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
@@ -434,5 +496,10 @@ private struct FilterTab: View {
             lutResult[lut.id] = FilterPreview.render(base, lut: lut)
         }
         lutPreviews = lutResult
+        var presetResult: [UUID: CGImage] = [:]
+        for preset in GradePresets.store.presets {
+            presetResult[preset.id] = FilterPreview.render(base, settings: preset.filter)
+        }
+        presetPreviews = presetResult
     }
 }

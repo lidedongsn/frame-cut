@@ -393,6 +393,10 @@ private struct MainClipView: View {
             Button("在播放头处分割") { model.splitAtPlayhead() }
             Button(clip.muted ? "取消静音" : "静音") { model.store.perform { $0.updateMain(id: clip.id) { $0.muted.toggle() } } }
             Divider()
+            Button("复制调色") { model.selection = .video(clip.id); model.copyGrade() }
+            Button("粘贴调色") { model.selection = .video(clip.id); model.pasteGrade() }
+                .disabled(model.copiedFilter == nil)
+            Divider()
             Button("删除", role: .destructive) { model.store.perform { $0.removeMain(id: clip.id) } }
         }
     }

@@ -236,7 +236,7 @@ public enum FilterPreview {
         return render(image, settings: f)
     }
 
-    static func render(_ image: CGImage, settings: FilterSettings) -> CGImage? {
+    public static func render(_ image: CGImage, settings: FilterSettings) -> CGImage? {
         let input = CIImage(cgImage: image)
         let output = FrameRenderer.filtered(input, settings, space: .sdr)
         return FrameRenderer.shared.context.createCGImage(output, from: input.extent)

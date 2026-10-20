@@ -100,6 +100,18 @@ extension Project {
         for i in mainTrack.indices { mainTrack[i].filter = filter }
     }
 
+    /// 粘贴调色到指定片段。
+    public mutating func applyFilter(_ filter: FilterSettings, to ids: Set<UUID>) {
+        for i in mainTrack.indices where ids.contains(mainTrack[i].id) { mainTrack[i].filter = filter }
+    }
+
+    /// 去掉所有调色的副本（对比原图用），其他设置不变。
+    public func withoutGrading() -> Project {
+        var p = self
+        for i in p.mainTrack.indices { p.mainTrack[i].filter = FilterSettings() }
+        return p
+    }
+
     // MARK: 音乐
 
     @discardableResult
