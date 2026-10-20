@@ -9,8 +9,17 @@ func color(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> CGColo
     CGColor(srgbRed: r, green: g, blue: b, alpha: a)
 }
 
+/// 竖向渐变：逐行填纯色。系统的 CGGradient 会加抖动噪点，PNG 几乎压不动（1024 图从约 50KB 涨到 600KB+）。
+func fillVertical(_ ctx: CGContext, _ rect: CGRect, top: (CGFloat, CGFloat, CGFloat), bottom: (CGFloat, CGFloat, CGFloat)) {
+    let rows = Int(rect.height.rounded(.up))
+    for i in 0..<rows {
+        let t = CGFloat(i) / CGFloat(max(1, rows - 1))
+        ctx.setFillColor(color(bottom.0 + (top.0 - bottom.0) * t, bottom.1 + (top.1 - bottom.1) * t, bottom.2 + (top.2 - bottom.2) * t))
+        ctx.fill(CGRect(x: rect.minX, y: rect.minY + CGFloat(i), width: rect.width, height: 1))
+    }
+}
+
 func drawIcon(_ ctx: CGContext) {
-    let space = CGColorSpace(name: CGColorSpace.sRGB)!
     // 苹果图标规范：1024 画布中主体 824×824，留出投影空间
     let body = CGRect(x: 100, y: 100, width: 824, height: 824)
     let bodyPath = CGPath(roundedRect: body, cornerWidth: 186, cornerHeight: 186, transform: nil)
@@ -27,10 +36,7 @@ func drawIcon(_ ctx: CGContext) {
     ctx.saveGState()
     ctx.addPath(bodyPath)
     ctx.clip()
-    let bg = CGGradient(colorsSpace: space, colors: [color(0.17, 0.19, 0.25), color(0.06, 0.07, 0.09)] as CFArray, locations: [0, 1])!
-    ctx.drawLinearGradient(bg, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
-    let glow = CGGradient(colorsSpace: space, colors: [color(0.16, 0.82, 0.86, 0.22), color(0.16, 0.82, 0.86, 0)] as CFArray, locations: [0, 1])!
-    ctx.drawRadialGradient(glow, startCenter: CGPoint(x: 512, y: 540), startRadius: 0, endCenter: CGPoint(x: 512, y: 540), endRadius: 420, options: [])
+    fillVertical(ctx, body, top: (0.17, 0.21, 0.26), bottom: (0.06, 0.07, 0.09))
     ctx.restoreGState()
 
     // 取景框四角（青色渐变描边）
@@ -45,9 +51,8 @@ func drawIcon(_ ctx: CGContext) {
     ctx.saveGState()
     ctx.addPath(corners.copy(strokingWithWidth: w, lineCap: .round, lineJoin: .round, miterLimit: 10))
     ctx.clip()
-    let teal = CGGradient(colorsSpace: space, colors: [color(0.30, 0.92, 0.90), color(0.12, 0.62, 0.92)] as CFArray, locations: [0, 1])!
-    ctx.drawLinearGradient(teal, start: CGPoint(x: lo, y: hi), end: CGPoint(x: hi, y: lo),
-                           options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    fillVertical(ctx, CGRect(x: lo - w, y: lo - w, width: hi - lo + 2 * w, height: hi - lo + 2 * w),
+                 top: (0.30, 0.92, 0.90), bottom: (0.12, 0.62, 0.92))
     ctx.restoreGState()
 
     // 播放键：圆角三角形，沿斜线切成两块并错开
@@ -80,11 +85,12 @@ func drawIcon(_ ctx: CGContext) {
         ctx.clip()
         ctx.addPath(tri)
         ctx.clip()
-        let fill = side > 0
-            ? CGGradient(colorsSpace: space, colors: [color(1, 0.90, 0.40), color(1, 0.74, 0.20)] as CFArray, locations: [0, 1])!
-            : CGGradient(colorsSpace: space, colors: [color(1, 1, 1), color(0.86, 0.89, 0.93)] as CFArray, locations: [0, 1])!
-        ctx.drawLinearGradient(fill, start: CGPoint(x: cx, y: cy + h / 2), end: CGPoint(x: cx, y: cy - h / 2),
-                               options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        let triRect = CGRect(x: cx - h, y: cy - h / 2 - 20, width: 2 * h, height: h + 40)
+        if side > 0 {
+            fillVertical(ctx, triRect, top: (1, 0.90, 0.40), bottom: (1, 0.74, 0.20))
+        } else {
+            fillVertical(ctx, triRect, top: (1, 1, 1), bottom: (0.86, 0.89, 0.93))
+        }
         ctx.restoreGState()
     }
 }
