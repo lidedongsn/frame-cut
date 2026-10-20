@@ -4,7 +4,7 @@ DD        := build/DD
 APP_DEBUG := $(DD)/Build/Products/Debug/FrameCut.app
 APP_REL   := $(DD)/Build/Products/Release/FrameCut.app
 
-.PHONY: help setup project build release run run-release test test-media bench check clean clean-all
+.PHONY: help setup project build release run run-release dmg test test-media bench check clean clean-all
 
 help:            ## 列出命令
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ run: build       ## 构建并打开调试版
 
 run-release: release ## 构建并打开发布版
 	open $(APP_REL)
+
+dmg: release     ## 打包安装包 build/FrameCut-版本号.dmg（可发给别人）
+	./scripts/make-dmg.sh
 
 test-media:      ## 生成测试素材到 TestMedia/（需要 ffmpeg）
 	./scripts/make-test-media.sh

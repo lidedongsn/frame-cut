@@ -27,6 +27,7 @@ make setup         # 安装 XcodeGen、ffmpeg 并生成 FrameCut.xcodeproj
 make run-release   # 构建并打开发布版（日常使用推荐）
 make test          # 单元测试（首次会用 ffmpeg 生成测试素材到 TestMedia/）
 make check         # 提交前检查：测试 + 构建
+make dmg           # 打包安装包 build/FrameCut-<版本>.dmg，可直接发给别人
 make help          # 全部命令
 ```
 
@@ -38,6 +39,9 @@ FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testReal
 ```
 
 日志：打开“控制台”App，按子系统 `com.lidedongsn.framecut` 过滤（分类 project / media / export / transcribe / cache）。
+
+安装包未使用 Apple 开发者账号签名公证：其他 Mac 从网上下载后首次打开会被拦截，
+需在「系统设置 → 隐私与安全性」点「仍要打开」放行一次（安装包内附说明）。
 
 ## 数据存放位置
 
