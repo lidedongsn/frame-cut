@@ -1,3 +1,4 @@
+// 配色取自 App 主题（App/Theme.swift）：石墨深灰底、强调青 (0.16,0.82,0.86)、播放头黄 (1,0.85,0.25)。
 // 生成 FrameCut 应用图标：取景框四角（Frame）+ 被斜切开的 “FC” 字标（Cut）。
 // 用法：swift scripts/make-icon.swift <输出目录>   → 输出 AppIcon.appiconset 所需的各尺寸 PNG
 import AppKit
@@ -71,19 +72,19 @@ func drawIcon(_ ctx: CGContext, detail: Bool) {
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 30, color: color(0, 0, 0, 0.4))
     ctx.addPath(bodyPath)
-    ctx.setFillColor(color(0.08, 0.09, 0.12))
+    ctx.setFillColor(color(0.07, 0.07, 0.08))
     ctx.fillPath()
     ctx.restoreGState()
 
-    // 背景：带一点蓝调的深色，上亮下暗
+    // 背景：与界面一致的中性石墨灰（窗口 0.067 / 面板 0.10 / 凸起 0.145），上亮下暗
     ctx.saveGState()
     ctx.addPath(bodyPath)
     ctx.clip()
-    fillVertical(ctx, body, top: (0.20, 0.24, 0.32), bottom: (0.05, 0.06, 0.09))
+    fillVertical(ctx, body, top: (0.18, 0.18, 0.20), bottom: (0.067, 0.067, 0.078))
     // 顶边高光：一圈细亮边，越往下越淡
     ctx.addPath(bodyPath.copy(strokingWithWidth: 6, lineCap: .round, lineJoin: .round, miterLimit: 10))
     ctx.clip()
-    fillVertical(ctx, body, top: (0.46, 0.52, 0.62), bottom: (0.06, 0.07, 0.10))
+    fillVertical(ctx, body, top: (0.42, 0.42, 0.45), bottom: (0.067, 0.067, 0.078))
     ctx.restoreGState()
 
     if detail {
@@ -97,7 +98,8 @@ func drawIcon(_ ctx: CGContext, detail: Bool) {
             corners.addLine(to: CGPoint(x: x, y: y + dy * len))
         }
         let stroke = corners.copy(strokingWithWidth: w, lineCap: .round, lineJoin: .round, miterLimit: 10)
-        drawRaised(ctx, stroke, top: (0.40, 0.93, 0.95), bottom: (0.10, 0.55, 0.95), lift: 0.6)
+        // 强调青：顶部略提亮表现受光，主体就是界面的强调色
+        drawRaised(ctx, stroke, top: (0.36, 0.92, 0.94), bottom: (0.16, 0.82, 0.86), lift: 0.6)
     }
 
     drawMonogram(ctx, cut: detail)
@@ -136,8 +138,9 @@ func drawMonogram(_ ctx: CGContext, cut: Bool) {
     var tc = CGAffineTransform(translationX: x0 + fb.width + kerning - cb.minX, y: y0 - cb.minY)
     let fPath = f.copy(using: &tf)!, cPath = c.copy(using: &tc)!
 
-    let white = ((CGFloat(1), CGFloat(1), CGFloat(1)), (CGFloat(0.80), CGFloat(0.84), CGFloat(0.91)))
-    let yellow = ((CGFloat(1), CGFloat(0.88), CGFloat(0.36)), (CGFloat(1), CGFloat(0.66), CGFloat(0.12)))
+    let white = ((CGFloat(1), CGFloat(1), CGFloat(1)), (CGFloat(0.84), CGFloat(0.84), CGFloat(0.86)))
+    // 播放头黄：顶部略亮，底部就是界面的播放头色
+    let yellow = ((CGFloat(1), CGFloat(0.92), CGFloat(0.45)), (CGFloat(1), CGFloat(0.85), CGFloat(0.25)))
     drawRaised(ctx, fPath, top: white.0, bottom: white.1)
 
     guard cut else {
