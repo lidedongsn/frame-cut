@@ -1,11 +1,17 @@
 <p align="center">
-  <img src="App/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="160" alt="FrameCut 图标">
+  <img src="docs/images/social-preview.png" alt="FrameCut：为 Apple 芯片 Mac 打造的 vlog 剪辑软件">
 </p>
 
-<h1 align="center">FrameCut</h1>
+<p align="center">
+  <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><img src="https://img.shields.io/github/v/release/lidedongsn/frame-cut?label=release&color=29d1db" alt="release"></a>
+  <a href="https://github.com/lidedongsn/frame-cut/releases"><img src="https://img.shields.io/github/downloads/lidedongsn/frame-cut/total?color=29d1db" alt="downloads"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Apple%20silicon-M1%E2%80%93M4-black" alt="Apple silicon">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+</p>
 
-<p align="center"><b>为 Apple 芯片 Mac 打造的 vlog 剪辑软件</b><br>
-免费 · 无水印 · 全部本地运行 · 安装包仅 2.3 MB</p>
+<p align="center"><b>为 Apple 芯片 Mac 打造的 vlog 剪辑软件</b> · 免费 · 无水印 · 全部本地运行 · 安装包仅 2.3 MB<br>
+<a href="https://github.com/lidedongsn/frame-cut/releases/latest"><b>⬇ 下载最新版</b></a></p>
 
 <p align="center">中文 · <a href="README.en.md">English</a></p>
 
@@ -86,6 +92,11 @@ iPhone 拍的视频大多是 HDR（杜比视界 / HLG）。FrameCut 能自动识
 
 **系统要求**：macOS 14 或更新版本，Apple 芯片（M1 / M2 / M3 / M4）。
 
+## 喜欢的话
+
+如果 FrameCut 帮你省了时间，欢迎点个 ⭐ Star，让更多人看到它。
+遇到问题或有想要的功能，请在 [Issues](https://github.com/lidedongsn/frame-cut/issues) 里告诉我。
+
 ## 开发
 
 需要 macOS 14+、Xcode 16+、Homebrew。
@@ -134,3 +145,7 @@ FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testReal
 | `App` | SwiftUI 界面 |
 
 设计文档：`docs/superpowers/specs/2026-10-16-framecut-mvp-design.md`
+
+## 许可证
+
+[MIT](LICENSE)。语音识别基于 [WhisperKit](https://github.com/argmaxinc/WhisperKit)（MIT）与 OpenAI Whisper 模型。

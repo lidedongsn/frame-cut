@@ -1,11 +1,17 @@
 <p align="center">
-  <img src="App/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="160" alt="FrameCut icon">
+  <img src="docs/images/social-preview.png" alt="FrameCut: a vlog editor built for Apple silicon Macs">
 </p>
 
-<h1 align="center">FrameCut</h1>
+<p align="center">
+  <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><img src="https://img.shields.io/github/v/release/lidedongsn/frame-cut?label=release&color=29d1db" alt="release"></a>
+  <a href="https://github.com/lidedongsn/frame-cut/releases"><img src="https://img.shields.io/github/downloads/lidedongsn/frame-cut/total?color=29d1db" alt="downloads"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Apple%20silicon-M1%E2%80%93M4-black" alt="Apple silicon">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+</p>
 
-<p align="center"><b>A vlog editor built for Apple silicon Macs</b><br>
-Free · No watermark · Runs entirely on your Mac · 2.3 MB download</p>
+<p align="center"><b>A vlog editor built for Apple silicon Macs</b> · Free · No watermark · Fully on-device · 2.3 MB download<br>
+<a href="https://github.com/lidedongsn/frame-cut/releases/latest"><b>⬇ Download the latest release</b></a></p>
 
 <p align="center"><a href="README.md">中文</a> · English</p>
 
@@ -95,6 +101,11 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 
 **Requirements**: macOS 14 or later, Apple silicon (M1 / M2 / M3 / M4).
 
+## Like it?
+
+If FrameCut saves you time, please give it a ⭐ star so more people can find it.
+Bugs and feature requests are welcome in [Issues](https://github.com/lidedongsn/frame-cut/issues).
+
 ## Development
 
 Requires macOS 14+, Xcode 16+ and Homebrew.
@@ -139,3 +150,7 @@ Logs: open the Console app and filter by subsystem `com.lidedongsn.framecut`
 | `App` | SwiftUI interface |
 
 Design document (Chinese): `docs/superpowers/specs/2026-10-16-framecut-mvp-design.md`
+
+## License
+
+[MIT](LICENSE). Speech recognition is powered by [WhisperKit](https://github.com/argmaxinc/WhisperKit) (MIT) and OpenAI's Whisper models.
