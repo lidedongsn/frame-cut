@@ -55,21 +55,26 @@ enum FilterLUT {
         let n = dimension
         let k = s.hasLook ? min(1, s.intensity) : 0
         var values = [Float](repeating: 0, count: n * n * n * 4)
-        var i = 0
-        for b in 0..<n {
-            for g in 0..<n {
-                for r in 0..<n {
-                    let input = SIMD3<Double>(Double(r), Double(g), Double(b)) / Double(n - 1)
-                    let look = cube.map { $0.sample(input) } ?? grade(s.preset, input)
-                    var out = input + (look - input) * k
-                    out = adjust(out, s, space)
-                    out = applyHSL(out, s.hsl)
-                    out = simd_clamp(out, .zero, .one)
-                    values[i] = Float(out.x)
-                    values[i + 1] = Float(out.y)
-                    values[i + 2] = Float(out.z)
-                    values[i + 3] = 1
-                    i += 4
+        // 按蓝色切片并行计算（每片写不重叠的区间）
+        let hsl = HSLTable(s.hsl)
+        values.withUnsafeMutableBufferPointer { buf in
+            let out = buf
+            DispatchQueue.concurrentPerform(iterations: n) { b in
+                var i = b * n * n * 4
+                for g in 0..<n {
+                    for r in 0..<n {
+                        let input = SIMD3<Double>(Double(r), Double(g), Double(b)) / Double(n - 1)
+                        let look = cube.map { $0.sample(input) } ?? grade(s.preset, input)
+                        var o = input + (look - input) * k
+                        o = adjust(o, s, space)
+                        o = applyHSL(o, hsl)
+                        o = simd_clamp(o, .zero, .one)
+                        out[i] = Float(o.x)
+                        out[i + 1] = Float(o.y)
+                        out[i + 2] = Float(o.z)
+                        out[i + 3] = 1
+                        i += 4
+                    }
                 }
             }
         }
@@ -102,7 +107,34 @@ enum FilterLUT {
 
     /// HSL 分色：按色相在相邻区间之间线性分配权重，灰色（低饱和）不受影响。
     static func applyHSL(_ c: SIMD3<Double>, _ hsl: [HSLBand: HSLAdjust]) -> SIMD3<Double> {
-        guard hsl.values.contains(where: { !$0.isIdentity }) else { return c }
+        applyHSL(c, HSLTable(hsl))
+    }
+
+    /// 预先展开的 HSL 参数：避免逐像素查字典。
+    struct HSLTable {
+        struct Entry {
+            var center, left, right, hue, saturation, luminance: Double
+        }
+
+        let entries: [Entry]
+
+        init(_ hsl: [HSLBand: HSLAdjust]) {
+            let bands = HSLBand.allCases
+            entries = bands.enumerated().compactMap { i, band in
+                guard let adj = hsl[band], !adj.isIdentity else { return nil }
+                let c0 = band.hueCenter
+                let prev = bands[(i + bands.count - 1) % bands.count].hueCenter
+                let next = bands[(i + 1) % bands.count].hueCenter
+                return Entry(center: c0,
+                             left: (c0 - prev + 360).truncatingRemainder(dividingBy: 360),
+                             right: (next - c0 + 360).truncatingRemainder(dividingBy: 360),
+                             hue: adj.hue, saturation: adj.saturation, luminance: adj.luminance)
+            }
+        }
+    }
+
+    static func applyHSL(_ c: SIMD3<Double>, _ table: HSLTable) -> SIMD3<Double> {
+        guard !table.entries.isEmpty else { return c }
         let rgb = simd_clamp(c, .zero, .one)
         let mx = rgb.max(), mn = rgb.min(), d = mx - mn
         guard mx > 0, d > 1e-5 else { return c }
@@ -112,22 +144,15 @@ enum FilterLUT {
         let s = d / mx
         let chroma = min(1, s / 0.2) // 接近灰色时逐渐减弱
         var hueShift = 0.0, satDelta = 0.0, lumDelta = 0.0
-        let bands = HSLBand.allCases
-        for (i, band) in bands.enumerated() {
-            guard let adj = hsl[band], !adj.isIdentity else { continue }
-            let c0 = band.hueCenter
-            let prev = bands[(i + bands.count - 1) % bands.count].hueCenter
-            let next = bands[(i + 1) % bands.count].hueCenter
-            let left = (c0 - prev + 360).truncatingRemainder(dividingBy: 360)
-            let right = (next - c0 + 360).truncatingRemainder(dividingBy: 360)
-            var delta = h - c0
+        for e in table.entries {
+            var delta = h - e.center
             if delta > 180 { delta -= 360 }
             if delta < -180 { delta += 360 }
-            let w = delta < 0 ? max(0, 1 + delta / left) : max(0, 1 - delta / right)
+            let w = delta < 0 ? max(0, 1 + delta / e.left) : max(0, 1 - delta / e.right)
             guard w > 0 else { continue }
-            hueShift += w * adj.hue * 30
-            satDelta += w * adj.saturation
-            lumDelta += w * adj.luminance
+            hueShift += w * e.hue * 30
+            satDelta += w * e.saturation
+            lumDelta += w * e.luminance
         }
         // 1. 色相旋转（HSV，饱和度与明度不变）
         let h2 = (h + hueShift * chroma + 360).truncatingRemainder(dividingBy: 360)

@@ -16,7 +16,9 @@ let package = Package(
     targets: [
         .target(name: "FCCore"),
         .target(name: "FCMedia", dependencies: ["FCCore"]),
-        .target(name: "FCEngine", dependencies: ["FCCore"]),
+        // 渲染引擎在调试构建中也开优化：逐像素生成 LUT 等计算在 -Onone 下慢 10 倍以上，拖动调色滑块会卡
+        .target(name: "FCEngine", dependencies: ["FCCore"],
+                swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .target(name: "FCTranscribe", dependencies: [
             "FCCore",
             .product(name: "WhisperKit", package: "WhisperKit"),
