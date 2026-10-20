@@ -212,6 +212,7 @@ final class EditorModel {
             checkMissingAssets() // 由“重新定位”窗口提示，不再弹错误框
         } catch {
             errorMessage = error.localizedDescription
+            Log.project.error("预览构建失败：\(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -358,6 +359,7 @@ final class EditorModel {
                 assets.append(try await MediaProbe.probe(url: url))
             } catch {
                 failed.append(url.lastPathComponent)
+                Log.media.error("无法导入 \(url.lastPathComponent, privacy: .public)：\(error.localizedDescription, privacy: .public)")
             }
         }
         let at = playhead
@@ -439,6 +441,7 @@ final class EditorModel {
             lastSaved = Date()
         } catch {
             errorMessage = "保存失败：\(error.localizedDescription)"
+            Log.project.error("保存失败：\(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -447,6 +450,8 @@ final class EditorModel {
     func export(settings: ExportSettings, to url: URL) {
         exportState = .running(0)
         let project = store.project
+        let started = Date()
+        Log.export.info("开始导出 \(settings.shortSide)p \(settings.frameRate)fps \(settings.dynamicRange.rawValue) \(settings.effectiveCodec.rawValue)")
         exportTask = Task { [weak self] in
             do {
                 try await Exporter().export(project: project, settings: settings, to: url) { p in
@@ -455,10 +460,13 @@ final class EditorModel {
                     }
                 }
                 self?.exportState = .done(url)
+                Log.export.info("导出完成，用时 \(Date().timeIntervalSince(started), format: .fixed(precision: 1)) 秒")
             } catch is CancellationError {
                 self?.exportState = .idle
+                Log.export.info("导出已取消")
             } catch {
                 self?.exportState = .failed(error.localizedDescription)
+                Log.export.error("导出失败：\(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -494,8 +502,10 @@ final class EditorModel {
                 let subs = segments.map { Subtitle(start: $0.start, end: $0.end, text: $0.text) }
                 self?.store.perform { $0.replaceSubtitles(subs) }
                 self?.transcribeState = subs.isEmpty ? .failed("没有识别到语音") : .idle
+                Log.transcribe.info("识别完成：\(subs.count) 条字幕")
             } catch {
                 self?.transcribeState = .failed(error.localizedDescription)
+                Log.transcribe.error("识别失败：\(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -507,15 +517,19 @@ final class EditorModel {
             guard let self else { return event }
             if NSApp.keyWindow?.firstResponder is NSText { return event }
             if event.modifierFlags.intersection([.command, .control, .option]).isEmpty == false { return event }
-            return MainActor.assumeIsolated {
-                switch event.keyCode {
-                case 49: self.togglePlay(); return nil // 空格
-                case 51, 117: self.deleteSelection(); return nil // Delete
-                case 123: self.step(frames: event.modifierFlags.contains(.shift) ? -10 : -1); return nil
-                case 124: self.step(frames: event.modifierFlags.contains(.shift) ? 10 : 1); return nil
-                default: return event
+            let keyCode = event.keyCode
+            let big = event.modifierFlags.contains(.shift)
+            let handled = MainActor.assumeIsolated { () -> Bool in
+                switch keyCode {
+                case 49: self.togglePlay() // 空格
+                case 51, 117: self.deleteSelection() // Delete
+                case 123: self.step(frames: big ? -10 : -1)
+                case 124: self.step(frames: big ? 10 : 1)
+                default: return false
                 }
+                return true
             }
+            return handled ? nil : event
         }
     }
 }

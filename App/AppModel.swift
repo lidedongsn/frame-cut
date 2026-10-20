@@ -44,12 +44,16 @@ final class AppModel {
     func open(url: URL) {
         do {
             let project = try ProjectFile.read(from: url)
-            editor?.close()
+            if editor != nil {
+                editor?.close()
+                Self.purgeCaches()
+            }
             editor = EditorModel(project: project, packageURL: url)
             RecentProjects().add(url)
             recent = RecentProjects().list()
         } catch {
             alert = "无法打开工程：\(error.localizedDescription)"
+            Log.project.error("无法打开工程：\(error.localizedDescription, privacy: .public)")
             RecentProjects().remove(url)
             recent = RecentProjects().list()
         }
@@ -64,6 +68,7 @@ final class AppModel {
 
     /// 释放缩略图、波形、照片、滤镜与字幕的内存缓存（关闭工程或系统内存紧张时）。
     static func purgeCaches() {
+        Log.cache.info("释放内存缓存")
         RenderCaches.purge()
         Task {
             await Thumbnails.shared.purge()

@@ -197,7 +197,10 @@ private struct ZoomEventCatcher: NSViewRepresentable {
 
         func install() {
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .magnify]) { [weak self] event in
-                MainActor.assumeIsolated { self?.handle(event) ?? event }
+                // 本地事件监视器总在主线程回调；被缩放消费的事件不再传给滚动视图
+                nonisolated(unsafe) let e = event
+                let consumed = MainActor.assumeIsolated { self?.handle(e) ?? false }
+                return consumed ? nil : event
             }
         }
 
@@ -206,10 +209,10 @@ private struct ZoomEventCatcher: NSViewRepresentable {
             monitor = nil
         }
 
-        private func handle(_ event: NSEvent) -> NSEvent? {
-            guard let view, event.window === view.window else { return event }
+        private func handle(_ event: NSEvent) -> Bool {
+            guard let view, event.window === view.window else { return false }
             let point = view.convert(event.locationInWindow, from: nil)
-            guard view.visibleRect.contains(point) else { return event }
+            guard view.visibleRect.contains(point) else { return false }
             let factor: Double
             switch event.type {
             case .magnify:
@@ -218,12 +221,12 @@ private struct ZoomEventCatcher: NSViewRepresentable {
                 let dy = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY : event.scrollingDeltaY * 8
                 factor = TimelineZoom.factor(scrollDelta: dy)
             default:
-                return event
+                return false
             }
             // SwiftUI 内容坐标 y 向下，x 与时间线一致
             let anchor = Time(seconds: max(0, Double(point.x - TL.leading) / model.pointsPerSecond))
             model.zoom(by: factor, anchor: anchor)
-            return nil
+            return true
         }
 
         func pointsPerSecondChanged(to pps: Double) {

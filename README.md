@@ -8,7 +8,8 @@
 - 导入：视频、照片、音乐，支持拖入窗口；素材丢失可重新定位
 - 剪辑：分割（⌘B）、删除（⌫）、拖动排序、拖动两端修剪、变速 0.25x–4x（变速不变调）、撤销重做
 - 画面：画幅 16:9 / 9:16 / 1:1 / 4:3 / 3:4，缩放、位移、旋转
-- 滤镜：10 个风格预设 + 强度，亮度 / 对比度 / 饱和度 / 色温，可一键应用到全部
+- 调色：10 个风格预设或导入 .cube LUT + 强度；亮度、对比度、高光、阴影、饱和度、自然饱和度、色温、色调；
+  HSL 分色（8 色）；锐化、暗角；复制 / 粘贴调色（⌥⌘C / ⌥⌘V）、按住对比原图、保存调色预设
 - 转场：叠化、闪黑、闪白、四向推移、滑入、擦除、放大、模糊，可一键应用到全部
 - 音频：原声音量 / 静音，背景音乐（位置、裁剪、分割、音量、淡入淡出）
 - 字幕：本地语音识别自动生成（WhisperKit，离线、免费），逐条校对，全局样式
@@ -19,22 +20,36 @@
 
 ## 开发
 
-需要 macOS 14+、Xcode 16+、[XcodeGen](https://github.com/yonaskolb/XcodeGen)。
+需要 macOS 14+、Xcode 16+、Homebrew。
 
 ```bash
-xcodegen generate                    # 生成 FrameCut.xcodeproj
-open FrameCut.xcodeproj              # 运行 FrameCut scheme
-
-./scripts/make-test-media.sh         # 用 ffmpeg 生成测试素材到 TestMedia/
-swift test --package-path Packages/FrameCutKit
+make setup         # 安装 XcodeGen、ffmpeg 并生成 FrameCut.xcodeproj
+make run-release   # 构建并打开发布版（日常使用推荐）
+make test          # 单元测试（首次会用 ffmpeg 生成测试素材到 TestMedia/）
+make check         # 提交前检查：测试 + 构建
+make help          # 全部命令
 ```
 
 可选实测（默认跳过）：
 
 ```bash
-FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription  # 真实语音识别（会下载约 480MB 模型）
-FC_BENCH=1 swift test --package-path Packages/FrameCutKit --filter Benchmark                    # 需先生成 TestMedia/vlog_180s.mp4
+make bench                                                                                       # 导出、分阶段、编码器性能
+FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription   # 真实语音识别（会下载约 480MB 模型）
 ```
+
+日志：打开“控制台”App，按子系统 `com.lidedongsn.framecut` 过滤（分类 project / media / export / transcribe / cache）。
+
+## 数据存放位置
+
+| 位置 | 内容 | 清理 |
+|---|---|---|
+| 工程文件 `*.framecut` | 工程数据（只引用素材，不复制） | 删除工程即删除 |
+| `~/Library/Application Support/FrameCut/Models` | 语音识别模型，约 470MB | 字幕页「删除」 |
+| `~/Library/Application Support/FrameCut/LUTs` | 导入的 LUT | 滤镜页右键删除 |
+| `~/Library/Application Support/FrameCut/GradePresets.json` | 调色预设 | 滤镜页右键删除 |
+| `~/Library/Caches/FrameCut` | 几 KB 的内部文件 | 自动维护 |
+
+内存缓存（缩略图、波形、照片、滤镜、字幕）都有上限，关闭工程或系统内存紧张时自动释放；语音模型识别后空闲 3 分钟自动卸载。
 
 ## 结构
 

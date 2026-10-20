@@ -113,7 +113,7 @@ struct RootView: View {
 
 /// 应用共用的缩略图提供者，HDR 帧按成片同样的方式色调映射。
 enum Thumbnails {
-    static let shared = ThumbnailProvider(hdrToneMapper: HDRThumbnail.toneMap)
+    static let shared = ThumbnailProvider(hdrToneMapper: { image, format in HDRThumbnail.toneMap(image, format: format) })
 }
 
 /// 应用共用的调色预设库。

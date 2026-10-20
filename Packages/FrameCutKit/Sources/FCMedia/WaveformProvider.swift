@@ -23,7 +23,7 @@ public actor WaveformProvider {
         let key = "\(url.path)|\(perSecond)"
         if let hit = cache[key] { return hit }
         if let task = inFlight[key] { return await task.value }
-        let task = Task.detached(priority: .utility) { Self.extract(url: url, perSecond: perSecond) }
+        let task = Task.detached(priority: .utility) { await Self.extract(url: url, perSecond: perSecond) }
         inFlight[key] = task
         let result = await task.value
         inFlight[key] = nil
@@ -31,10 +31,10 @@ public actor WaveformProvider {
         return result
     }
 
-    private static func extract(url: URL, perSecond: Int) -> [Float] {
+    private static func extract(url: URL, perSecond: Int) async -> [Float] {
         let sampleRate = 8000
         let asset = AVURLAsset(url: url)
-        guard let track = asset.tracks(withMediaType: .audio).first,
+        guard let track = try? await asset.loadTracks(withMediaType: .audio).first,
               let reader = try? AVAssetReader(asset: asset) else { return [] }
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
             AVFormatIDKey: kAudioFormatLinearPCM,
