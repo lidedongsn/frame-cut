@@ -5,13 +5,20 @@ import FCCore
 
 /// 用 Core Text 把字幕渲染为 CIImage（原点在左下，尺寸为文字包围盒），按文字 + 样式 + 画布尺寸缓存。
 public enum SubtitleRenderer {
-    private static let cache = NSCache<NSString, CIImage>()
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var cache = LRUCache<String, CIImage>(capacity: 128)
+
+    static var cachedCount: Int { lock.withLock { cache.count } }
+
+    static func purge() {
+        lock.withLock { cache.removeAll() }
+    }
 
     public static func image(text: String, style: SubtitleStyle, canvas: CGSize) -> CIImage? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, canvas.width > 0 else { return nil }
-        let key = "\(trimmed)|\(style.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))" as NSString
-        if let hit = cache.object(forKey: key) { return hit }
+        let key = "\(trimmed)|\(style.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))"
+        if let hit = lock.withLock({ cache[key] }) { return hit }
 
         let fontSize = max(8, style.fontSize * canvas.height)
         let font = CTFontCreateWithName(style.fontName as CFString, fontSize, nil)
@@ -62,7 +69,7 @@ public enum SubtitleRenderer {
         draw(fill)
         guard let cg = ctx.makeImage() else { return nil }
         let image = CIImage(cgImage: cg)
-        cache.setObject(image, forKey: key)
+        lock.withLock { cache[key] = image }
         return image
     }
 

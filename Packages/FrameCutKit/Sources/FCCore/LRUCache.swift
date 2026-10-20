@@ -1,16 +1,16 @@
 /// 小容量 LRU 缓存：满了淘汰最久未用的一项（容量小，线性查找即可）。
-struct LRUCache<Key: Hashable, Value> {
-    let capacity: Int
+public struct LRUCache<Key: Hashable, Value> {
+    public let capacity: Int
     private var entries: [Key: (value: Value, used: UInt64)] = [:]
     private var clock: UInt64 = 0
 
-    init(capacity: Int) {
+    public init(capacity: Int) {
         self.capacity = max(1, capacity)
     }
 
-    var count: Int { entries.count }
+    public var count: Int { entries.count }
 
-    subscript(key: Key) -> Value? {
+    public subscript(key: Key) -> Value? {
         mutating get {
             guard let e = entries[key] else { return nil }
             clock &+= 1
@@ -31,5 +31,9 @@ struct LRUCache<Key: Hashable, Value> {
         }
     }
 
-    func contains(_ key: Key) -> Bool { entries[key] != nil }
+    public func contains(_ key: Key) -> Bool { entries[key] != nil }
+
+    public mutating func removeAll() {
+        entries.removeAll()
+    }
 }

@@ -1,6 +1,42 @@
 import AppKit
 import FCCore
+import FCTranscribe
 import SwiftUI
+
+/// 语音模型占用与删除。
+private struct ModelStorageRow: View {
+    @Bindable var model: EditorModel
+    @State private var size: Int64 = 0
+    @State private var confirmDelete = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if size > 0 {
+                Text("语音模型已下载 · \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))")
+                Button("删除") { confirmDelete = true }
+                    .buttonStyle(.plain).foregroundStyle(Theme.accent)
+                    .disabled(isRunning)
+            } else {
+                Text("首次识别需下载约 480 MB 语音模型")
+            }
+        }
+        .font(.system(size: 10))
+        .foregroundStyle(Theme.tertiary)
+        .task(id: model.transcribeState.isRunning) { size = WhisperKitTranscriber.modelDiskSize }
+        .confirmationDialog("删除语音模型？", isPresented: $confirmDelete) {
+            Button("删除", role: .destructive) {
+                Task {
+                    try? await WhisperKitTranscriber.shared.deleteModel()
+                    size = WhisperKitTranscriber.modelDiskSize
+                }
+            }
+        } message: {
+            Text("释放约 \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) 磁盘空间，已生成的字幕不受影响。下次识别字幕时会重新下载。")
+        }
+    }
+
+    private var isRunning: Bool { model.transcribeState.isRunning }
+}
 
 /// 字幕：自动识别、逐条校对、全局样式。
 struct SubtitlePanel: View {
@@ -21,8 +57,6 @@ struct SubtitlePanel: View {
                 .help("用本地语音识别为主轨原声生成字幕（免费、离线）")
 
                 Button {
-                    let id = model.store.project.subtitles.isEmpty ? nil : UUID()
-                    _ = id
                     var newID: UUID?
                     let at = model.playhead
                     model.store.perform { newID = $0.addSubtitle(at: at, text: "输入字幕") }
@@ -35,6 +69,7 @@ struct SubtitlePanel: View {
             }
 
             statusView
+            ModelStorageRow(model: model)
 
             DisclosureGroup(isExpanded: $showStyle) {
                 StyleEditor(model: model).padding(.top, 8)
@@ -80,10 +115,7 @@ struct SubtitlePanel: View {
         }
     }
 
-    private var isRunning: Bool {
-        if case .running = model.transcribeState { return true }
-        return false
-    }
+    private var isRunning: Bool { model.transcribeState.isRunning }
 
     @ViewBuilder
     private var statusView: some View {

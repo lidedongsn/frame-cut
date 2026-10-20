@@ -69,3 +69,24 @@ final class SubtitleSplitTests: XCTestCase {
         XCTAssertEqual(lines.map(\.text), ["Hello world", "nice day"])
     }
 }
+
+final class ModelStorageTests: XCTestCase {
+    func testDirectorySizeAndDelete() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("fc-models-\(UUID())")
+        let sub = dir.appendingPathComponent("models/a", isDirectory: true)
+        try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+        try Data(count: 3000).write(to: sub.appendingPathComponent("x.bin"))
+        try Data(count: 2000).write(to: dir.appendingPathComponent("y.bin"))
+        XCTAssertEqual(ModelStorage.size(of: dir), 5000)
+        try ModelStorage.delete(dir)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: dir.path))
+        XCTAssertEqual(ModelStorage.size(of: dir), 0)
+    }
+
+    func testUnloadIsSafeWhenNotLoaded() async {
+        let t = WhisperKitTranscriber()
+        await t.unload()
+        let loaded = await t.isLoaded
+        XCTAssertFalse(loaded)
+    }
+}

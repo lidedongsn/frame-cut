@@ -1,6 +1,7 @@
 import FCCore
 import FCEngine
 import FCMedia
+import FCTranscribe
 import SwiftUI
 
 @main
@@ -65,7 +66,21 @@ struct FrameCutApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var app: AppModel?
 
+    private var memoryPressure: DispatchSourceMemoryPressure?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    /// 系统内存紧张时释放缓存；严重时连语音模型一起释放。
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        source.setEventHandler { [weak source] in
+            let critical = source?.data.contains(.critical) ?? false
+            MainActor.assumeIsolated { AppModel.purgeCaches() }
+            if critical { Task { await WhisperKitTranscriber.shared.unload() } }
+        }
+        source.resume()
+        memoryPressure = source
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated { app?.editor?.save() }

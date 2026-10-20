@@ -1,5 +1,7 @@
 import AppKit
 import FCCore
+import FCEngine
+import FCMedia
 import Observation
 import UniformTypeIdentifiers
 
@@ -57,6 +59,16 @@ final class AppModel {
         editor?.close()
         editor = nil
         recent = RecentProjects().list()
+        Self.purgeCaches()
+    }
+
+    /// 释放缩略图、波形、照片、滤镜与字幕的内存缓存（关闭工程或系统内存紧张时）。
+    static func purgeCaches() {
+        RenderCaches.purge()
+        Task {
+            await Thumbnails.shared.purge()
+            await WaveformProvider.shared.purge()
+        }
     }
 
     // 文本框聚焦时，撤销交给文本框自己。

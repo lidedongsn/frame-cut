@@ -8,14 +8,25 @@ import ImageIO
 public actor ThumbnailProvider {
     public typealias ToneMapper = @Sendable (CGImage, HDRFormat) -> CGImage?
 
+    /// 同时保留的生成器个数（每个持有一个打开的素材）。
+    static let generatorLimit = 24
+
     private let cache = NSCache<NSString, CGImage>()
-    private var generators: [URL: AVAssetImageGenerator] = [:]
+    private var generators = LRUCache<URL, AVAssetImageGenerator>(capacity: ThumbnailProvider.generatorLimit)
     /// HDR 帧的色调映射（由调用方传入，FCMedia 不依赖渲染引擎）。
     private let hdrToneMapper: ToneMapper?
 
     public init(hdrToneMapper: ToneMapper? = nil) {
         self.hdrToneMapper = hdrToneMapper
-        cache.countLimit = 2000
+        cache.countLimit = 1500
+    }
+
+    var generatorCount: Int { generators.count }
+
+    /// 释放全部缓存（关闭工程或内存紧张时）。
+    public func purge() {
+        cache.removeAllObjects()
+        generators.removeAll()
     }
 
     public func thumbnail(url: URL, time: Time, maxHeight: CGFloat, hdr: HDRFormat? = nil) async -> CGImage? {

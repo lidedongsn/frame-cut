@@ -33,6 +33,10 @@ enum FilterLUT {
         FilterSettings.quantized(f) { v, step in (v / step).rounded() * step }
     }
 
+    static func purge() {
+        lock.withLock { cache.removeAll() }
+    }
+
     static func isCached(_ f: FilterSettings, space: GradingSpace) -> Bool {
         lock.withLock { cache.contains(key(quantized(f), space)) }
     }

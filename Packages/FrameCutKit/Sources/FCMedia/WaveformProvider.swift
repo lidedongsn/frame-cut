@@ -1,14 +1,23 @@
 import AVFoundation
+import FCCore
 import Foundation
 
 /// 音频波形峰值（0...1），每秒 perSecond 个点，内存缓存。
 public actor WaveformProvider {
     public static let shared = WaveformProvider()
 
-    private var cache: [String: [Float]] = [:]
+    static let cacheLimit = 64
+
+    private var cache = LRUCache<String, [Float]>(capacity: WaveformProvider.cacheLimit)
     private var inFlight: [String: Task<[Float], Never>] = [:]
 
     public init() {}
+
+    var cachedCount: Int { cache.count }
+
+    public func purge() {
+        cache.removeAll()
+    }
 
     public func peaks(url: URL, perSecond: Int = 50) async -> [Float] {
         let key = "\(url.path)|\(perSecond)"

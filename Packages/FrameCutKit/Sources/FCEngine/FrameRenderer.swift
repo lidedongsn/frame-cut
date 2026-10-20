@@ -25,7 +25,15 @@ final class FrameRenderer: @unchecked Sendable {
         } else {
             context = CIContext(options: Self.contextOptions)
         }
-        imageCache.countLimit = 64
+        // 照片解码后常驻内存（4K 照片约 50MB），按字节数限制
+        imageCache.countLimit = 32
+        imageCache.totalCostLimit = Self.stillImageByteLimit
+    }
+
+    static let stillImageByteLimit = 384 * 1024 * 1024
+
+    func purgeImages() {
+        imageCache.removeAllObjects()
     }
 
     func render(_ request: AVAsynchronousVideoCompositionRequest) throws -> CVPixelBuffer {
@@ -103,7 +111,7 @@ final class FrameRenderer: @unchecked Sendable {
         ]
         guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else { return nil }
         let image = CIImage(cgImage: cg)
-        imageCache.setObject(image, forKey: key)
+        imageCache.setObject(image, forKey: key, cost: cg.bytesPerRow * cg.height)
         return image
     }
 
@@ -240,5 +248,15 @@ public enum FilterPreview {
         let input = CIImage(cgImage: image)
         let output = FrameRenderer.filtered(input, settings, space: .sdr)
         return FrameRenderer.shared.context.createCGImage(output, from: input.extent)
+    }
+}
+
+/// 渲染相关的内存缓存（照片、滤镜 LUT、字幕图），关闭工程或内存紧张时释放。
+public enum RenderCaches {
+    public static func purge() {
+        FrameRenderer.shared.purgeImages()
+        FilterLUT.purge()
+        SubtitleRenderer.purge()
+        RenderTimer.preview.reset()
     }
 }

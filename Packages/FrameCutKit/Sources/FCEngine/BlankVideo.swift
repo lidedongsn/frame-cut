@@ -17,6 +17,10 @@ enum BlankVideo {
         lock.lock()
         defer { lock.unlock() }
         if FileManager.default.fileExists(atPath: url.path) { return url }
+        // 上次生成中途退出留下的临时文件
+        for stray in (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [] where stray.hasPrefix("blank_") && stray != url.lastPathComponent {
+            try? FileManager.default.removeItem(at: dir.appendingPathComponent(stray))
+        }
         let tmp = dir.appendingPathComponent("blank_\(UUID().uuidString).mov")
         try write(to: tmp)
         try? FileManager.default.removeItem(at: url)

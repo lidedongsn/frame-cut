@@ -37,8 +37,40 @@ public actor WhisperKitTranscriber: Transcriber {
     public static let modelVariant = "openai_whisper-small"
 
     private var pipe: WhisperKit?
+    /// 识别完成后空闲多久释放模型（约 500MB 内存）。
+    public static let idleUnloadSeconds: UInt64 = 180
+    private var useGeneration = 0
 
     public init() {}
+
+    public var isLoaded: Bool { pipe != nil }
+
+    /// 释放已加载的模型，下次识别时重新加载。
+    public func unload() {
+        pipe = nil
+    }
+
+    /// 已下载模型占用的磁盘空间（字节）。
+    public static var modelDiskSize: Int64 { ModelStorage.size(of: modelsDirectory) }
+
+    /// 删除已下载的模型（下次识别会重新下载）。
+    public func deleteModel() throws {
+        pipe = nil
+        try ModelStorage.delete(Self.modelsDirectory)
+    }
+
+    private func scheduleIdleUnload() {
+        useGeneration += 1
+        let generation = useGeneration
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.idleUnloadSeconds * 1_000_000_000)
+            await self?.unloadIfIdle(generation)
+        }
+    }
+
+    private func unloadIfIdle(_ generation: Int) {
+        if generation == useGeneration { pipe = nil }
+    }
 
     static var modelsDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -55,6 +87,8 @@ public actor WhisperKitTranscriber: Transcriber {
 
     public func transcribe(samples: [Float], progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> [TranscriptSegment] {
         guard !samples.isEmpty else { return [] }
+        useGeneration += 1
+        defer { scheduleIdleUnload() }
         let pipe = try await loadPipeline(progress: progress)
         progress(.transcribing(0))
 
@@ -129,5 +163,24 @@ public actor WhisperKitTranscriber: Transcriber {
         let noTokens = raw.replacingOccurrences(of: "<\\|[^|]*\\|>", with: "", options: .regularExpression)
         let trimmed = noTokens.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.applyingTransform(StringTransform("Hant-Hans"), reverse: false) ?? trimmed
+    }
+}
+
+/// 模型目录的大小统计与删除。
+public enum ModelStorage {
+    public static func size(of directory: URL) -> Int64 {
+        guard let e = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey]) else { return 0 }
+        var total: Int64 = 0
+        for case let url as URL in e {
+            let v = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+            guard v?.isRegularFile == true else { continue }
+            total += Int64(v?.fileSize ?? 0)
+        }
+        return total
+    }
+
+    public static func delete(_ directory: URL) throws {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return }
+        try FileManager.default.removeItem(at: directory)
     }
 }

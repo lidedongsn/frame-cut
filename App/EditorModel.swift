@@ -25,6 +25,11 @@ enum TranscribeState: Equatable {
     case idle
     case running(String, Double?)
     case failed(String)
+
+    var isRunning: Bool {
+        if case .running = self { return true }
+        return false
+    }
 }
 
 /// 一个打开的工程：编辑状态、播放器、自动保存、导出与识别。
