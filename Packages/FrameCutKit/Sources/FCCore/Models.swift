@@ -165,21 +165,138 @@ public enum FilterPreset: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// HSL 分色调整的颜色区间。
+public enum HSLBand: String, Codable, CaseIterable, Sendable, CodingKeyRepresentable {
+    case red, orange, yellow, green, cyan, blue, purple, magenta
+
+    public var displayName: String {
+        switch self {
+        case .red: "红"
+        case .orange: "橙"
+        case .yellow: "黄"
+        case .green: "绿"
+        case .cyan: "青"
+        case .blue: "蓝"
+        case .purple: "紫"
+        case .magenta: "洋红"
+        }
+    }
+
+    /// 区间中心色相（度）。
+    public var hueCenter: Double {
+        switch self {
+        case .red: 0
+        case .orange: 30
+        case .yellow: 60
+        case .green: 120
+        case .cyan: 180
+        case .blue: 225
+        case .purple: 270
+        case .magenta: 315
+        }
+    }
+}
+
+/// 一个颜色区间的调整，均为 -1...1。
+public struct HSLAdjust: Codable, Equatable, Sendable {
+    public var hue: Double = 0
+    public var saturation: Double = 0
+    public var luminance: Double = 0
+
+    public init(hue: Double = 0, saturation: Double = 0, luminance: Double = 0) {
+        self.hue = hue
+        self.saturation = saturation
+        self.luminance = luminance
+    }
+
+    public var isIdentity: Bool { hue == 0 && saturation == 0 && luminance == 0 }
+}
+
+/// 用户导入的 .cube LUT（文件存放在 App 的 LUT 库中）。
+public struct UserLUTRef: Codable, Equatable, Hashable, Sendable {
+    public var id: UUID
+    public var name: String
+
+    public init(id: UUID, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
 public struct FilterSettings: Codable, Equatable, Sendable {
+    /// 风格：内置滤镜或用户 LUT（二选一），强度控制混合比例。
     public var preset: FilterPreset = .none
+    public var lut: UserLUTRef?
     public var intensity: Double = 1
-    /// 以下均为 -1...1，0 表示不调节。
+    /// 基础调节，均为 -1...1，0 表示不调节。
     public var brightness: Double = 0
     public var contrast: Double = 0
+    public var highlights: Double = 0
+    public var shadows: Double = 0
     public var saturation: Double = 0
+    public var vibrance: Double = 0
     public var temperature: Double = 0
+    /// 色调：正值偏洋红，负值偏绿。
+    public var tint: Double = 0
+    /// HSL 分色调整。
+    public var hsl: [HSLBand: HSLAdjust] = [:]
+    /// 效果（空间滤镜，不进颜色 LUT），0...1。
+    public var sharpen: Double = 0
+    public var vignette: Double = 0
 
     public init(preset: FilterPreset = .none) {
         self.preset = preset
     }
 
-    public var isIdentity: Bool {
-        (preset == .none || intensity == 0) && brightness == 0 && contrast == 0 && saturation == 0 && temperature == 0
+    public var hasLook: Bool { (preset != .none || lut != nil) && intensity > 0 }
+
+    /// 颜色部分为恒等（不需要 LUT）。
+    public var colorIsIdentity: Bool {
+        !hasLook && brightness == 0 && contrast == 0 && highlights == 0 && shadows == 0 && saturation == 0
+            && vibrance == 0 && temperature == 0 && tint == 0 && hsl.values.allSatisfy(\.isIdentity)
+    }
+
+    public var isIdentity: Bool { colorIsIdentity && sharpen == 0 && vignette == 0 }
+
+    public mutating func selectPreset(_ p: FilterPreset) {
+        preset = p
+        lut = nil
+        if intensity == 0 { intensity = 1 }
+    }
+
+    public mutating func selectLUT(_ ref: UserLUTRef) {
+        lut = ref
+        preset = .none
+        if intensity == 0 { intensity = 1 }
+    }
+
+    /// 重置基础调节与效果（保留风格与 HSL）。
+    public mutating func resetAdjustments() {
+        brightness = 0; contrast = 0; highlights = 0; shadows = 0
+        saturation = 0; vibrance = 0; temperature = 0; tint = 0
+        sharpen = 0; vignette = 0
+    }
+}
+
+extension FilterSettings {
+    /// 旧工程只有部分字段，缺省的取默认值。
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func v(_ k: CodingKeys) throws -> Double { try c.decodeIfPresent(Double.self, forKey: k) ?? 0 }
+        preset = try c.decodeIfPresent(FilterPreset.self, forKey: .preset) ?? .none
+        lut = try c.decodeIfPresent(UserLUTRef.self, forKey: .lut)
+        intensity = try c.decodeIfPresent(Double.self, forKey: .intensity) ?? 1
+        brightness = try v(.brightness)
+        contrast = try v(.contrast)
+        highlights = try v(.highlights)
+        shadows = try v(.shadows)
+        saturation = try v(.saturation)
+        vibrance = try v(.vibrance)
+        temperature = try v(.temperature)
+        tint = try v(.tint)
+        hsl = try c.decodeIfPresent([HSLBand: HSLAdjust].self, forKey: .hsl) ?? [:]
+        sharpen = try v(.sharpen)
+        vignette = try v(.vignette)
     }
 }
 

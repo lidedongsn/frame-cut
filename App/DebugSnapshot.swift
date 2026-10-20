@@ -1,7 +1,7 @@
 import AppKit
 import FCCore
 
-/// 开发调试：`-snapshot <png 路径> [-snapshotDelay 秒] [-autoplay] [-zoomFit] [-colorMode sdr|hdr] [-showExport]` 启动后把主窗口内容存为 PNG。
+/// 开发调试：`-snapshot <png 路径> [-snapshotDelay 秒] [-autoplay] [-zoomFit] [-colorMode sdr|hdr] [-showExport] [-selectFirst]` 启动后把主窗口内容存为 PNG。
 enum DebugSnapshot {
     @MainActor
     static func scheduleIfRequested(app: AppModel) {
@@ -15,6 +15,11 @@ enum DebugSnapshot {
         }
         if let k = args.firstIndex(of: "-colorMode"), k + 1 < args.count, let mode = ColorMode(rawValue: args[k + 1]) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { app.editor?.store.perform { $0.setColorMode(mode) } }
+        }
+        if args.contains("-selectFirst") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if let id = app.editor?.project.mainTrack.first?.id { app.editor?.selection = .video(id) }
+            }
         }
         if args.contains("-showExport") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { app.editor?.showExport = true }

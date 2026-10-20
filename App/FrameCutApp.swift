@@ -7,6 +7,10 @@ struct FrameCutApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var app = AppModel()
 
+    init() {
+        UserLUTLibrary.shared.load()
+    }
+
     var body: some Scene {
         Window("FrameCut", id: "main") {
             RootView()

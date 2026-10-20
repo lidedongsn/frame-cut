@@ -57,6 +57,7 @@ final class FrameRenderer: @unchecked Sendable {
             // SDR 工程中的 HDR 素材：先色调映射，再按 SDR 调色
             if !hdrProject && layer.isHDR { image = ToneMap.apply(image) }
             image = Self.filtered(Self.placed(image, layer: layer, canvas: canvas), layer.filter, space: grading)
+            image = Self.effects(image.cropped(to: rect), filter: layer.filter, canvas: canvas)
             // HDR 工程输出 SDR：只映射 HDR 素材（调色之后），普通素材保持原亮度
             if hdrProject && !instruction.output.isHDR && layer.isHDR { image = ToneMap.apply(image) }
             return image.cropped(to: rect).composited(over: black)
@@ -134,6 +135,28 @@ final class FrameRenderer: @unchecked Sendable {
         return image.transformed(by: CGAffineTransform(scaleX: scale, y: scale).concatenating(CGAffineTransform(translationX: tx, y: ty)))
     }
 
+    /// 空间效果：锐化（只作用于亮度）、暗角。
+    static func effects(_ input: CIImage, filter f: FilterSettings, canvas: CGSize) -> CIImage {
+        var image = input
+        let scale = canvas.height / 1080
+        if f.sharpen > 0 {
+            image = image.clampedToExtent().applyingFilter("CISharpenLuminance", parameters: [
+                kCIInputSharpnessKey: f.sharpen * 0.8,
+                kCIInputRadiusKey: max(0.5, 1.6 * scale),
+            ]).cropped(to: input.extent)
+        }
+        if f.vignette > 0 {
+            let diagonal = hypot(canvas.width, canvas.height)
+            image = image.applyingFilter("CIVignetteEffect", parameters: [
+                kCIInputCenterKey: CIVector(x: canvas.width / 2, y: canvas.height / 2),
+                kCIInputRadiusKey: diagonal * 0.38,
+                kCIInputIntensityKey: f.vignette,
+                "inputFalloff": 0.6,
+            ]).cropped(to: input.extent)
+        }
+        return image
+    }
+
     static func filtered(_ input: CIImage, _ f: FilterSettings, space: GradingSpace) -> CIImage {
         guard let lut = FilterLUT.data(f, space: space) else { return input }
         return input.applyingFilter("CIColorCubeWithColorSpace", parameters: [
@@ -204,8 +227,18 @@ enum TransitionRenderer {
 
 public enum FilterPreview {
     public static func render(_ image: CGImage, preset: FilterPreset) -> CGImage? {
+        render(image, settings: FilterSettings(preset: preset))
+    }
+
+    public static func render(_ image: CGImage, lut: UserLUTRef) -> CGImage? {
+        var f = FilterSettings()
+        f.selectLUT(lut)
+        return render(image, settings: f)
+    }
+
+    static func render(_ image: CGImage, settings: FilterSettings) -> CGImage? {
         let input = CIImage(cgImage: image)
-        let output = FrameRenderer.filtered(input, FilterSettings(preset: preset), space: .sdr)
+        let output = FrameRenderer.filtered(input, settings, space: .sdr)
         return FrameRenderer.shared.context.createCGImage(output, from: input.extent)
     }
 }

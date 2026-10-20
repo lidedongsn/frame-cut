@@ -17,14 +17,16 @@ enum GradingSpace: String, Sendable {
     }
 }
 
-/// 滤镜预设 + 调节（亮度、对比度、饱和度、色温）→ 一张 33³ 3D LUT（RGBA float）。
+/// 风格（内置滤镜或用户 LUT）+ 基础调节 + HSL → 一张 33³ 3D LUT（RGBA float）。锐化、暗角等空间效果不在这里。
 enum FilterLUT {
     static let dimension = 33
     private static let lock = NSLock()
     nonisolated(unsafe) private static var cache = LRUCache<String, Data>(capacity: 64)
 
     private static func key(_ s: FilterSettings, _ space: GradingSpace) -> String {
-        "\(space.rawValue)|\(s.preset.rawValue)|\(s.intensity)|\(s.brightness)|\(s.contrast)|\(s.saturation)|\(s.temperature)"
+        let hsl = HSLBand.allCases.compactMap { b in s.hsl[b].flatMap { $0.isIdentity ? nil : "\(b.rawValue):\($0.hue),\($0.saturation),\($0.luminance)" } }
+        return "\(space.rawValue)|\(s.preset.rawValue)|\(s.lut?.id.uuidString ?? "")|\(s.intensity)|\(s.brightness)|\(s.contrast)|\(s.highlights)|\(s.shadows)"
+            + "|\(s.saturation)|\(s.vibrance)|\(s.temperature)|\(s.tint)|\(hsl.joined(separator: ";"))"
     }
 
     private static func quantized(_ f: FilterSettings) -> FilterSettings {
@@ -37,26 +39,31 @@ enum FilterLUT {
 
     /// 锁只保护缓存读写；LUT 在锁外计算，渲染线程不会被正在拖动的滑块阻塞。
     static func data(_ f: FilterSettings, space: GradingSpace) -> Data? {
-        guard !f.isIdentity else { return nil }
-        let s = quantized(f)
+        var s = quantized(f)
+        // 找不到的用户 LUT（被删除或在别的电脑上）按无风格处理
+        let cube = s.lut.flatMap { UserLUTLibrary.shared.cube($0.id) }
+        if cube == nil { s.lut = nil }
+        guard !s.colorIsIdentity else { return nil }
         let key = key(s, space)
         if let hit = lock.withLock({ cache[key] }) { return hit }
-        let data = build(s, space)
+        let data = build(s, space, cube)
         lock.withLock { cache[key] = data }
         return data
     }
 
-    private static func build(_ s: FilterSettings, _ space: GradingSpace) -> Data {
+    private static func build(_ s: FilterSettings, _ space: GradingSpace, _ cube: CubeLUT?) -> Data {
         let n = dimension
-        let k = s.preset == .none ? 0 : min(1, s.intensity)
+        let k = s.hasLook ? min(1, s.intensity) : 0
         var values = [Float](repeating: 0, count: n * n * n * 4)
         var i = 0
         for b in 0..<n {
             for g in 0..<n {
                 for r in 0..<n {
                     let input = SIMD3<Double>(Double(r), Double(g), Double(b)) / Double(n - 1)
-                    var out = input + (grade(s.preset, input) - input) * k
+                    let look = cube.map { $0.sample(input) } ?? grade(s.preset, input)
+                    var out = input + (look - input) * k
                     out = adjust(out, s, space)
+                    out = applyHSL(out, s.hsl)
                     out = simd_clamp(out, .zero, .one)
                     values[i] = Float(out.x)
                     values[i + 1] = Float(out.y)
@@ -73,10 +80,77 @@ enum FilterLUT {
     static func adjust(_ c: SIMD3<Double>, _ f: FilterSettings, _ space: GradingSpace) -> SIMD3<Double> {
         var o = c + SIMD3(repeating: f.brightness * 0.25)
         o = (o - 0.5) * (1 + f.contrast * 0.5) + 0.5
+        // 高光 / 阴影：只影响各自亮度区间，纯黑纯白不动；按比例缩放 RGB 保持色相
+        if f.highlights != 0 || f.shadows != 0 {
+            let y = min(1, max(0, simd_dot(o, space.lumaWeights)))
+            func bump(_ t: Double) -> Double { let t = min(1, max(0, t)); return 4 * t * (1 - t) }
+            let target = y + f.shadows * 0.25 * bump(y / 0.7) + f.highlights * 0.25 * bump((y - 0.3) / 0.7)
+            o = y > 1e-4 ? o * (target / y) : o + SIMD3(repeating: target - y)
+        }
         let y = simd_dot(o, space.lumaWeights)
         o = SIMD3(repeating: y) + (o - SIMD3(repeating: y)) * max(0, 1 + f.saturation)
+        // 自然饱和度：越不饱和的颜色提升越多，已经很艳的颜色基本不动
+        if f.vibrance != 0 {
+            let y = simd_dot(o, space.lumaWeights)
+            let sat = min(1, max(0, o.max() - o.min()))
+            o = SIMD3(repeating: y) + (o - SIMD3(repeating: y)) * max(0, 1 + f.vibrance * (1 - sat))
+        }
         o *= SIMD3(1 + f.temperature * 0.12, 1, 1 - f.temperature * 0.12)
+        o *= SIMD3(1 + f.tint * 0.05, 1 - f.tint * 0.08, 1 + f.tint * 0.05)
         return o
+    }
+
+    /// HSL 分色：按色相在相邻区间之间线性分配权重，灰色（低饱和）不受影响。
+    static func applyHSL(_ c: SIMD3<Double>, _ hsl: [HSLBand: HSLAdjust]) -> SIMD3<Double> {
+        guard hsl.values.contains(where: { !$0.isIdentity }) else { return c }
+        let rgb = simd_clamp(c, .zero, .one)
+        let mx = rgb.max(), mn = rgb.min(), d = mx - mn
+        guard mx > 0, d > 1e-5 else { return c }
+        var h: Double
+        if mx == rgb.x { h = 60 * ((rgb.y - rgb.z) / d) } else if mx == rgb.y { h = 60 * ((rgb.z - rgb.x) / d + 2) } else { h = 60 * ((rgb.x - rgb.y) / d + 4) }
+        if h < 0 { h += 360 }
+        let s = d / mx
+        let chroma = min(1, s / 0.2) // 接近灰色时逐渐减弱
+        var hueShift = 0.0, satDelta = 0.0, lumDelta = 0.0
+        let bands = HSLBand.allCases
+        for (i, band) in bands.enumerated() {
+            guard let adj = hsl[band], !adj.isIdentity else { continue }
+            let c0 = band.hueCenter
+            let prev = bands[(i + bands.count - 1) % bands.count].hueCenter
+            let next = bands[(i + 1) % bands.count].hueCenter
+            let left = (c0 - prev + 360).truncatingRemainder(dividingBy: 360)
+            let right = (next - c0 + 360).truncatingRemainder(dividingBy: 360)
+            var delta = h - c0
+            if delta > 180 { delta -= 360 }
+            if delta < -180 { delta += 360 }
+            let w = delta < 0 ? max(0, 1 + delta / left) : max(0, 1 - delta / right)
+            guard w > 0 else { continue }
+            hueShift += w * adj.hue * 30
+            satDelta += w * adj.saturation
+            lumDelta += w * adj.luminance
+        }
+        // 1. 色相旋转（HSV，饱和度与明度不变）
+        let h2 = (h + hueShift * chroma + 360).truncatingRemainder(dividingBy: 360)
+        let v2 = mx, s2 = s
+        let cc = v2 * s2
+        let x = cc * (1 - abs((h2 / 60).truncatingRemainder(dividingBy: 2) - 1))
+        let m = v2 - cc
+        let (r, g, b): (Double, Double, Double)
+        switch h2 {
+        case ..<60: (r, g, b) = (cc, x, 0)
+        case ..<120: (r, g, b) = (x, cc, 0)
+        case ..<180: (r, g, b) = (0, cc, x)
+        case ..<240: (r, g, b) = (0, x, cc)
+        case ..<300: (r, g, b) = (x, 0, cc)
+        default: (r, g, b) = (cc, 0, x)
+        }
+        var o = SIMD3(r + m, g + m, b + m)
+        // 2. 饱和度：向亮度灰混合，去饱和时亮度不变
+        let weights = SIMD3(0.2126, 0.7152, 0.0722)
+        let y = simd_dot(o, weights)
+        o = SIMD3(repeating: y) + (o - SIMD3(repeating: y)) * max(0, 1 + satDelta * chroma)
+        // 3. 明亮度：整体缩放
+        return o * (1 + lumDelta * 0.35 * chroma)
     }
 
     // MARK: 调色函数（输入输出均为 0...1 的 sRGB）
@@ -150,6 +224,11 @@ extension FilterSettings {
         s.contrast = q(f.contrast, 0.01)
         s.saturation = q(f.saturation, 0.01)
         s.temperature = q(f.temperature, 0.01)
+        s.highlights = q(f.highlights, 0.01)
+        s.shadows = q(f.shadows, 0.01)
+        s.vibrance = q(f.vibrance, 0.01)
+        s.tint = q(f.tint, 0.01)
+        s.hsl = f.hsl.mapValues { HSLAdjust(hue: q($0.hue, 0.01), saturation: q($0.saturation, 0.01), luminance: q($0.luminance, 0.01)) }
         return s
     }
 }

@@ -129,6 +129,9 @@ private struct ProjectInspector: View {
 private struct VideoInspector: View {
     @Bindable var model: EditorModel
     let id: UUID
+    @State private var hslBand: HSLBand = .orange
+    /// 基础（画面 / 变速 / 原声）与调色两页，切换片段时保持所在页。
+    @AppStorage("inspector.videoTab") private var tab = "basic"
 
     private var clip: VideoClip? { model.project.mainClip(id: id) }
     private var asset: MediaAsset? { clip.flatMap { model.project.asset(id: $0.assetID) } }
@@ -138,6 +141,14 @@ private struct VideoInspector: View {
         if let asset {
             Text(asset.name).font(.system(size: 11)).foregroundStyle(Theme.tertiary).lineLimit(1).truncationMode(.middle)
         }
+        Picker("", selection: $tab) {
+            Text("基础").tag("basic")
+            Text("调色").tag("grade")
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+
+        if tab != "grade" {
 
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -197,28 +208,90 @@ private struct VideoInspector: View {
             }
         }
 
+        } else {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 SectionTitle("调节")
-                Button("重置") {
-                    model.store.perform { $0.updateMain(id: id) { c in
-                        c.filter.brightness = 0; c.filter.contrast = 0; c.filter.saturation = 0; c.filter.temperature = 0
-                    } }
-                }
-                .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Theme.accent)
+                Spacer()
+                resetButton { $0.resetAdjustments() }
             }
-            Text("滤镜：\(clip?.filter.preset.displayName ?? "")（在左侧「滤镜」中选择）")
+            Text("风格：\(styleName)（在左侧「滤镜」中选择）")
                 .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
             adjust("亮度", \.filter.brightness)
             adjust("对比度", \.filter.contrast)
+            adjust("高光", \.filter.highlights)
+            adjust("阴影", \.filter.shadows)
             adjust("饱和度", \.filter.saturation)
+            adjust("自然饱和度", \.filter.vibrance)
             adjust("色温", \.filter.temperature)
+            adjust("色调", \.filter.tint)
+            adjust("锐化", \.filter.sharpen, range: 0...1)
+            adjust("暗角", \.filter.vignette, range: 0...1)
+        }
+
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                SectionTitle("HSL 分色")
+                Spacer()
+                resetButton { $0.hsl = [:] }
+            }
+            HStack(spacing: 6) {
+                ForEach(HSLBand.allCases, id: \.self) { band in
+                    Button { hslBand = band } label: {
+                        Circle().fill(Self.swatch(band))
+                            .frame(width: 20, height: 20)
+                            .overlay(Circle().stroke(hslBand == band ? Theme.text : .clear, lineWidth: 2).padding(-3))
+                            .overlay(alignment: .topTrailing) {
+                                if !(clip?.filter.hsl[band]?.isIdentity ?? true) {
+                                    Circle().fill(Theme.accent).frame(width: 6, height: 6).offset(x: 3, y: -3)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .help(hslBand == band ? "\(band.displayName)（正在调整）" : band.displayName)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            Text("调整画面中\(hslBand.displayName)色的部分，如天空用蓝、肤色用橙、草地用绿。")
+                .font(.system(size: 11)).foregroundStyle(Theme.tertiary).fixedSize(horizontal: false, vertical: true)
+            hslSlider("色相", \.hue)
+            hslSlider("饱和度", \.saturation)
+            hslSlider("亮度", \.luminance)
+        }
         }
     }
 
-    private func adjust(_ title: String, _ kp: WritableKeyPath<VideoClip, Double>) -> some View {
-        LabeledSlider(title: title, value: model.clipBinding(id, kp, default: 0), range: -1...1,
-                      format: { String(format: "%+.0f", $0 * 100) }, onEditing: model.coalesce)
+    private func hslSlider(_ title: String, _ kp: WritableKeyPath<HSLAdjust, Double>) -> some View {
+        let band = hslBand
+        let value = Binding<Double>(
+            get: { model.project.mainClip(id: id)?.filter.hsl[band]?[keyPath: kp] ?? 0 },
+            set: { v in model.store.perform { $0.updateMain(id: id) { c in
+                var adj = c.filter.hsl[band] ?? HSLAdjust()
+                adj[keyPath: kp] = v
+                c.filter.hsl[band] = adj.isIdentity ? nil : adj
+            } } }
+        )
+        return LabeledSlider(title: title, value: value, range: -1...1,
+                             format: { String(format: "%+.0f", $0 * 100) }, onEditing: model.coalesce)
+    }
+
+    private var styleName: String {
+        guard let f = clip?.filter else { return "" }
+        return f.lut?.name ?? f.preset.displayName
+    }
+
+    private func resetButton(_ change: @escaping (inout FilterSettings) -> Void) -> some View {
+        Button("重置") { model.store.perform { $0.updateMain(id: id) { change(&$0.filter) } } }
+            .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Theme.accent)
+    }
+
+    private static func swatch(_ band: HSLBand) -> Color {
+        Color(hue: band.hueCenter / 360, saturation: 0.75, brightness: 0.95)
+    }
+
+    private func adjust(_ title: String, _ kp: WritableKeyPath<VideoClip, Double>, range: ClosedRange<Double> = -1...1) -> some View {
+        LabeledSlider(title: title, value: model.clipBinding(id, kp, default: 0), range: range,
+                      format: { String(format: range.lowerBound < 0 ? "%+.0f" : "%.0f", $0 * 100) }, onEditing: model.coalesce)
     }
 }
 

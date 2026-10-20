@@ -1,7 +1,9 @@
+import AppKit
 import FCCore
 import FCEngine
 import FCMedia
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum LibraryTab: String, CaseIterable {
     case media, audio, text, transition, filter
@@ -30,7 +32,7 @@ enum LibraryTab: String, CaseIterable {
 /// 左侧素材库：素材 / 音频 / 字幕 / 转场 / 滤镜。
 struct LibraryPanel: View {
     @Bindable var model: EditorModel
-    @State private var tab: LibraryTab = .media
+    @State private var tab: LibraryTab = UserDefaults.standard.string(forKey: "debug.libraryTab").flatMap(LibraryTab.init(rawValue:)) ?? .media
 
     var body: some View {
         VStack(spacing: 0) {
@@ -313,6 +315,8 @@ private struct FilterTab: View {
     @Bindable var model: EditorModel
     @State private var source: CGImage?
     @State private var previews: [FilterPreset: CGImage] = [:]
+    @State private var lutPreviews: [UUID: CGImage] = [:]
+    @State private var luts: [UserLUTRef] = UserLUTLibrary.shared.all
 
     private var clip: VideoClip? { model.selectedClip }
     private var sampleClip: VideoClip? { clip ?? model.project.mainTrack.first }
@@ -323,25 +327,39 @@ private struct FilterTab: View {
                 .font(.system(size: 11))
                 .foregroundStyle(clip == nil ? Theme.tertiary : Theme.secondary)
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 8)], spacing: 10) {
-                    ForEach(FilterPreset.allCases, id: \.self) { preset in
-                        Button {
-                            guard let id = clip?.id else { return }
-                            model.store.perform { $0.updateMain(id: id) { $0.filter.preset = preset; if $0.filter.intensity == 0 { $0.filter.intensity = 1 } } }
-                        } label: {
-                            VStack(spacing: 5) {
-                                Rectangle().fill(Theme.raised)
-                                    .aspectRatio(1.4, contentMode: .fit)
-                                    .overlay {
-                                        if let img = previews[preset] { Image(decorative: img, scale: 1).resizable().scaledToFill() }
-                                    }
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(clip?.filter.preset == preset ? Theme.accent : .clear, lineWidth: 2))
-                                Text(preset.displayName).font(.system(size: 11))
+                VStack(alignment: .leading, spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 8)], spacing: 10) {
+                        ForEach(FilterPreset.allCases, id: \.self) { preset in
+                            tile(preset.displayName, image: previews[preset],
+                                 selected: clip?.filter.lut == nil && clip?.filter.preset == preset) {
+                                apply { $0.selectPreset(preset) }
                             }
-                            .foregroundStyle(clip == nil ? Theme.tertiary : Theme.text)
                         }
-                        .buttonStyle(.plain)
+                    }
+                    HStack {
+                        SectionTitle("我的 LUT")
+                        Spacer()
+                        Button("导入 .cube…") { importLUT() }
+                            .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Theme.accent)
+                    }
+                    if luts.isEmpty {
+                        Text("导入相机厂商或网上下载的 .cube 调色文件，所有工程通用。")
+                            .font(.system(size: 11)).foregroundStyle(Theme.tertiary).fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 8)], spacing: 10) {
+                            ForEach(luts, id: \.id) { lut in
+                                tile(lut.name, image: lutPreviews[lut.id], selected: clip?.filter.lut?.id == lut.id) {
+                                    apply { $0.selectLUT(lut) }
+                                }
+                                .contextMenu {
+                                    Button("从 LUT 库删除", role: .destructive) {
+                                        UserLUTLibrary.shared.remove(lut.id)
+                                        luts = UserLUTLibrary.shared.all
+                                        model.scheduleRebuild()
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -360,6 +378,46 @@ private struct FilterTab: View {
         .task(id: sampleClip?.id) { await loadPreviews() }
     }
 
+    private func apply(_ change: @escaping (inout FilterSettings) -> Void) {
+        guard let id = clip?.id else { return }
+        model.store.perform { $0.updateMain(id: id) { change(&$0.filter) } }
+    }
+
+    private func tile(_ title: String, image: CGImage?, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 5) {
+                Rectangle().fill(Theme.raised)
+                    .aspectRatio(1.4, contentMode: .fit)
+                    .overlay {
+                        if let image { Image(decorative: image, scale: 1).resizable().scaledToFill() }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(selected ? Theme.accent : .clear, lineWidth: 2))
+                Text(title).font(.system(size: 11)).lineLimit(1).truncationMode(.middle)
+            }
+            .foregroundStyle(clip == nil ? Theme.tertiary : Theme.text)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func importLUT() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = [UTType(filenameExtension: "cube") ?? .data]
+        guard panel.runModal() == .OK else { return }
+        var failed: [String] = []
+        var last: UserLUTRef?
+        for url in panel.urls {
+            do { last = try UserLUTLibrary.shared.importFile(url) } catch {
+                failed.append("\(url.lastPathComponent)：\(error.localizedDescription)")
+            }
+        }
+        luts = UserLUTLibrary.shared.all
+        if let last, clip != nil { apply { $0.selectLUT(last) } }
+        if !failed.isEmpty { model.errorMessage = "以下 LUT 无法导入：\n" + failed.joined(separator: "\n") }
+        Task { await loadPreviews() }
+    }
+
     private func loadPreviews() async {
         guard let clip = sampleClip, let asset = model.project.asset(id: clip.assetID) else {
             previews = [:]
@@ -371,5 +429,10 @@ private struct FilterTab: View {
             result[preset] = preset == .none ? base : FilterPreview.render(base, preset: preset)
         }
         previews = result
+        var lutResult: [UUID: CGImage] = [:]
+        for lut in UserLUTLibrary.shared.all {
+            lutResult[lut.id] = FilterPreview.render(base, lut: lut)
+        }
+        lutPreviews = lutResult
     }
 }

@@ -24,6 +24,27 @@ final class SnapshotDump: XCTestCase {
     }
 }
 
+extension SnapshotDump {
+    /// 调色前后对比：阴影提亮、高光压暗、蓝色加饱和、暗角、锐化。
+    func testDumpGrading() async throws {
+        guard let dir = ProcessInfo.processInfo.environment["FC_DUMP_DIR"] else { throw XCTSkip("未设置 FC_DUMP_DIR") }
+        var p = try await Fixtures.project(["landscape_10s.mp4"])
+        let before = try await Fixtures.frame(p, at: 3, shortSide: 540)
+        p.updateMain(id: p.mainTrack[0].id) {
+            $0.filter.shadows = 0.8; $0.filter.highlights = -0.6; $0.filter.vibrance = 0.5
+            $0.filter.hsl[.blue] = HSLAdjust(hue: 0.5, saturation: -1, luminance: 0)
+            $0.filter.vignette = 0.8; $0.filter.sharpen = 0.6
+        }
+        let after = try await Fixtures.frame(p, at: 3, shortSide: 540)
+        for (name, img) in [("grade_before", before), ("grade_after", after)] {
+            let url = URL(fileURLWithPath: dir).appendingPathComponent("\(name).png") as CFURL
+            let dest = CGImageDestinationCreateWithURL(url, UTType.png.identifier as CFString, 1, nil)!
+            CGImageDestinationAddImage(dest, img, nil)
+            CGImageDestinationFinalize(dest)
+        }
+    }
+}
+
 /// 手动验收用：FC_DEMO_DIR 设置时生成一个演示工程 demo.framecut。
 final class DemoProjectMaker: XCTestCase {
     func testMakeDemoProject() async throws {
