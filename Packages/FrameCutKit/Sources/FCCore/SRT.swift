@@ -1,0 +1,61 @@
+import Foundation
+
+/// SRT 字幕文件读写。
+public enum SRT {
+    public static func encode(_ subtitles: [Subtitle]) -> String {
+        subtitles.sorted { $0.start < $1.start }.enumerated().map { i, sub in
+            "\(i + 1)\n\(timestamp(sub.start)) --> \(timestamp(sub.end))\n\(sub.text)\n"
+        }.joined(separator: "\n")
+    }
+
+    /// 宽松解析：兼容 CRLF、BOM、毫秒用点号、多行文字、时间行后的坐标，去掉 <i> 等标签。
+    public static func decode(_ text: String) -> [Subtitle] {
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+            .replacingOccurrences(of: "\u{FEFF}", with: "")
+        var result: [Subtitle] = []
+        let lines = normalized.components(separatedBy: "\n")
+        var i = 0
+        while i < lines.count {
+            guard let (start, end) = parseTiming(lines[i]) else { i += 1; continue }
+            i += 1
+            var body: [String] = []
+            while i < lines.count, !lines[i].trimmingCharacters(in: .whitespaces).isEmpty, parseTiming(lines[i]) == nil {
+                body.append(lines[i])
+                i += 1
+            }
+            // 下一条的序号行被当成正文时去掉
+            if i < lines.count, parseTiming(lines[i]) != nil, let last = body.last, Int(last.trimmingCharacters(in: .whitespaces)) != nil {
+                body.removeLast()
+            }
+            let text = body.joined(separator: "\n")
+                .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if end > start, !text.isEmpty { result.append(Subtitle(start: start, end: end, text: text)) }
+        }
+        return result.sorted { $0.start < $1.start }
+    }
+
+    static func timestamp(_ t: Time) -> String {
+        let ms = max(0, Int((t.seconds * 1000).rounded()))
+        return String(format: "%02d:%02d:%02d,%03d", ms / 3_600_000, ms / 60_000 % 60, ms / 1000 % 60, ms % 1000)
+    }
+
+    private static let timing = try! NSRegularExpression(
+        pattern: #"^\s*(\d+):(\d{1,2}):(\d{1,2})(?:[,.](\d{1,3}))?\s*-->\s*(\d+):(\d{1,2}):(\d{1,2})(?:[,.](\d{1,3}))?"#)
+
+    private static func parseTiming(_ line: String) -> (Time, Time)? {
+        let range = NSRange(line.startIndex..., in: line)
+        guard let m = timing.firstMatch(in: line, range: range) else { return nil }
+        func group(_ i: Int) -> String? {
+            Range(m.range(at: i), in: line).map { String(line[$0]) }
+        }
+        func time(_ base: Int) -> Time {
+            let h = Double(group(base) ?? "0") ?? 0
+            let mnt = Double(group(base + 1) ?? "0") ?? 0
+            let s = Double(group(base + 2) ?? "0") ?? 0
+            let fraction = group(base + 3).map { Double("0." + $0) ?? 0 } ?? 0
+            return Time(seconds: h * 3600 + mnt * 60 + s + fraction)
+        }
+        return (time(1), time(5))
+    }
+}

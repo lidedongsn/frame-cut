@@ -25,11 +25,21 @@ public final class EditorStore {
         var next = project
         body(&next)
         guard next != project else { return }
+        followMain(&next)
         if coalescingDepth == 0 {
             pushUndo(project)
         }
         project = next
         onChange?(project)
+    }
+
+    /// 主轨时间布局变了且这次没有改字幕时，字幕跟随主轨。
+    /// 连续操作（拖动修剪）期间从操作开始前的状态换算，拖回去时字幕也能回来。
+    private func followMain(_ next: inout Project) {
+        guard next.subtitlesFollowMain, next.subtitles == project.subtitles else { return }
+        let base = coalescingSnapshot ?? project
+        guard base.subtitlesFollowMain, TimelineLayout(project: base) != TimelineLayout(project: next) else { return }
+        next.subtitles = next.subtitlesFollowingMain(from: base)
     }
 
     /// 开始一段连续操作（如拖动滑块），期间的修改只记一次撤销。

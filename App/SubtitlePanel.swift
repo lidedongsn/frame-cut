@@ -77,6 +77,21 @@ struct SubtitlePanel: View {
                 }
                 .buttonStyle(PanelButtonStyle())
                 .help("在播放头位置添加一条字幕")
+
+                Menu {
+                    Button("导入 SRT…") { model.importSRT() }
+                    Button("导出 SRT…") { model.exportSRT() }
+                        .disabled(model.project.subtitles.isEmpty)
+                    Divider()
+                    Toggle("字幕跟随视频剪辑", isOn: model.projectBinding(\.subtitlesFollowMain))
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .disabled(isRunning)
+                .help("导入 / 导出 SRT 字幕，字幕是否跟随视频剪辑")
             }
 
             HStack(spacing: 12) {

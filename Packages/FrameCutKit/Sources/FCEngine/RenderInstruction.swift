@@ -67,8 +67,9 @@ final class RenderScene {
         self.style = style
     }
 
-    func activeSubtitles(at t: Time) -> [Subtitle] {
-        subtitles.filter { $0.start <= t && t < $0.end }
+    /// 当前显示的字幕；时间重叠时取后开始的一条，避免两条叠在同一位置。
+    func activeSubtitle(at t: Time) -> Subtitle? {
+        subtitles.filter { $0.start <= t && t < $0.end }.max { $0.start < $1.start }
     }
 }
 

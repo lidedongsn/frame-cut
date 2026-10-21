@@ -61,6 +61,8 @@ public struct Project: Codable, Equatable, Sendable {
     public var colorModeIsAutomatic = true
     /// 为 true 时画幅与帧率跟随第一个导入的视频 / 图片；用户手动设置后为 false。
     public var formatIsAutomatic = true
+    /// 为 true 时字幕跟随主轨：删除 / 修剪 / 变速 / 调序片段后，字幕跟着它下面的画面走。
+    public var subtitlesFollowMain = true
 
     /// 工程可选帧率。
     public static let frameRates = [24, 25, 30, 50, 60]
@@ -451,5 +453,6 @@ extension Project {
         colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
         // 旧工程的画幅 / 帧率可能是手动设的
         formatIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .formatIsAutomatic) ?? false
+        subtitlesFollowMain = try c.decodeIfPresent(Bool.self, forKey: .subtitlesFollowMain) ?? true
     }
 }

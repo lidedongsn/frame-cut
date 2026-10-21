@@ -5,6 +5,7 @@ import FCEngine
 import FCMedia
 import FCTranscribe
 import Observation
+import UniformTypeIdentifiers
 
 enum Selection: Equatable {
     case video(UUID)
@@ -317,6 +318,41 @@ final class EditorModel {
         if case .subtitle = selection { selection = nil }
     }
 
+    /// 导入 SRT，替换现有字幕（可撤销）。导入的时间按当前时间线对齐。
+    func importSRT() {
+        let panel = NSOpenPanel()
+        panel.title = "导入 SRT 字幕"
+        panel.allowedContentTypes = [UTType(filenameExtension: "srt") ?? .plainText]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf16)
+              ?? String(data: data, encoding: String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))) else {
+            errorMessage = "无法读取字幕文件"
+            return
+        }
+        let subs = SRT.decode(text)
+        guard !subs.isEmpty else {
+            errorMessage = "没有在文件里找到 SRT 字幕"
+            return
+        }
+        store.perform { $0.replaceSubtitles(subs) }
+        notice = "已导入 \(subs.count) 条字幕。"
+    }
+
+    func exportSRT() {
+        let panel = NSSavePanel()
+        panel.title = "导出 SRT 字幕"
+        panel.allowedContentTypes = [UTType(filenameExtension: "srt") ?? .plainText]
+        panel.nameFieldStringValue = project.name + ".srt"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try SRT.encode(project.subtitles).write(to: url, atomically: true, encoding: .utf8)
+            notice = "已导出 \(project.subtitles.count) 条字幕。"
+        } catch {
+            errorMessage = "无法写入字幕文件：\(error.localizedDescription)"
+        }
+    }
+
     func mergeSubtitleWithNext(_ id: UUID) {
         store.perform { $0.mergeSubtitleWithNext(id: id) }
         selection = .subtitle(id)
@@ -473,9 +509,20 @@ final class EditorModel {
 
     // MARK: 导出
 
-    func export(settings: ExportSettings, to url: URL) {
+    /// burnSubtitles：字幕画进视频；writeSRT：在视频旁边另存同名 .srt。
+    func export(settings: ExportSettings, to url: URL, burnSubtitles: Bool = true, writeSRT: Bool = false) {
         exportState = .running(0)
-        let project = store.project
+        var project = store.project
+        if writeSRT, !project.subtitles.isEmpty {
+            let srtURL = url.deletingPathExtension().appendingPathExtension("srt")
+            do {
+                try SRT.encode(project.subtitles).write(to: srtURL, atomically: true, encoding: .utf8)
+            } catch {
+                exportState = .failed("无法写入字幕文件：\(error.localizedDescription)")
+                return
+            }
+        }
+        if !burnSubtitles { project.subtitles = [] }
         let started = Date()
         Log.export.info("开始导出 \(settings.shortSide)p \(settings.frameRate)fps \(settings.dynamicRange.rawValue) \(settings.effectiveCodec.rawValue)")
         exportTask = Task { [weak self] in
@@ -526,7 +573,11 @@ final class EditorModel {
                     }
                 }
                 let subs = segments.map { Subtitle(start: $0.start, end: $0.end, text: $0.text) }
-                self?.store.perform { $0.replaceSubtitles(subs) }
+                self?.store.perform {
+                    $0.replaceSubtitles(subs)
+                    // 只来自视频原声的字幕跟随视频剪辑；只来自音频轨（旁白）的不跟随
+                    if original != music { $0.subtitlesFollowMain = original }
+                }
                 self?.transcribeState = subs.isEmpty ? .failed("没有识别到语音") : .idle
                 Log.transcribe.info("识别完成：\(subs.count) 条字幕")
             } catch {

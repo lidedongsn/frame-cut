@@ -9,6 +9,8 @@ struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var settings = ExportSettings()
     @State private var showAdvanced = false
+    @AppStorage("export.burnSubtitles") private var burnSubtitles = true
+    @AppStorage("export.writeSRT") private var writeSRT = false
 
     private var isHDRProject: Bool { model.project.colorMode == .hdr }
     private var outputSize: CGSize { RenderSize.size(aspect: model.project.aspect, shortSide: settings.shortSide) }
@@ -73,6 +75,14 @@ struct ExportSheet: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
             Text("已按素材自动选择，一般直接导出即可。").font(.system(size: 11)).foregroundStyle(.secondary)
         }
+        if !model.project.subtitles.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("字幕画进视频", isOn: $burnSubtitles)
+                Toggle("同时导出 .srt 字幕文件（与视频同名）", isOn: $writeSRT)
+            }
+            .toggleStyle(.checkbox)
+            .font(.system(size: 12))
+        }
         DisclosureGroup("高级设置", isExpanded: $showAdvanced) {
             Form {
                 Picker("分辨率", selection: $settings.shortSide) {
@@ -136,6 +146,7 @@ struct ExportSheet: View {
         panel.directoryURL = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first
         guard panel.runModal() == .OK, let url = panel.url else { return }
         model.save()
-        model.export(settings: settings, to: url)
+        let hasSubs = !model.project.subtitles.isEmpty
+        model.export(settings: settings, to: url, burnSubtitles: !hasSubs || burnSubtitles, writeSRT: hasSubs && writeSRT)
     }
 }
