@@ -638,6 +638,7 @@ private struct SubtitleClipView: View {
                     model.store.perform { $0.updateSubtitle(id: sub.id) { $0.start = s.start + d; $0.end = s.end + d } }
                 }
                 .onEnded { _ in end() })
+            .contextMenu { SubtitleContextMenu(model: model, sub: sub) }
             .help(sub.text)
     }
 

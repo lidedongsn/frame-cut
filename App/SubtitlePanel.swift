@@ -111,8 +111,15 @@ struct SubtitlePanel: View {
                     .frame(maxWidth: .infinity)
                 Spacer()
             } else {
-                Text("共 \(model.project.subtitles.count) 条 · 点击时间跳转，直接修改文字")
-                    .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
+                HStack {
+                    Text("共 \(model.project.subtitles.count) 条 · 点击时间跳转，右键分割 / 合并 / 删除")
+                        .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
+                    Spacer()
+                    Button("清空") { model.confirmClearSubtitles = true }
+                        .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Theme.accent)
+                        .disabled(isRunning)
+                        .help("删除全部字幕（可撤销）")
+                }
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 4) {
@@ -173,6 +180,28 @@ struct SubtitlePanel: View {
     }
 }
 
+/// 字幕右键菜单：时间线上的字幕块与字幕列表共用。
+struct SubtitleContextMenu: View {
+    @Bindable var model: EditorModel
+    let sub: Subtitle
+
+    private var isLast: Bool { model.project.subtitles.last?.id == sub.id }
+    private var playheadInside: Bool { sub.start < model.playhead && model.playhead < sub.end }
+
+    var body: some View {
+        Button("在播放头处分割") {
+            model.selection = .subtitle(sub.id)
+            model.splitAtPlayhead()
+        }
+        .disabled(!playheadInside)
+        Button("与下一条合并") { model.mergeSubtitleWithNext(sub.id) }
+            .disabled(isLast)
+        Divider()
+        Button("删除", role: .destructive) { model.removeSubtitle(sub.id) }
+        Button("清空全部字幕…", role: .destructive) { model.confirmClearSubtitles = true }
+    }
+}
+
 private struct SubtitleRow: View {
     @Bindable var model: EditorModel
     let sub: Subtitle
@@ -198,16 +227,19 @@ private struct SubtitleRow: View {
                 .font(.system(size: 12))
                 .lineLimit(1...3)
             Button {
-                model.store.perform { $0.removeSubtitle(id: sub.id) }
+                model.removeSubtitle(sub.id)
             } label: {
                 Image(systemName: "xmark").font(.system(size: 9))
             }
             .buttonStyle(.plain)
             .foregroundStyle(Theme.tertiary)
             .padding(.top, 3)
+            .help("删除这条字幕")
         }
         .padding(6)
         .background(RoundedRectangle(cornerRadius: 6).fill(selected ? Theme.hover : (active ? Theme.raised : Color.clear)))
+        .contentShape(Rectangle())
+        .contextMenu { SubtitleContextMenu(model: model, sub: sub) }
     }
 }
 

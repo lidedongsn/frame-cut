@@ -72,6 +72,12 @@ struct EditorView: View {
                 }
             }
         }
+        .confirmationDialog("清空全部 \(model.project.subtitles.count) 条字幕？", isPresented: $model.confirmClearSubtitles) {
+            Button("清空", role: .destructive) { model.clearSubtitles() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("可以用 ⌘Z 撤销。")
+        }
         .alert("提示", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("好") { model.errorMessage = nil }
         } message: {

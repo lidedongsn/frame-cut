@@ -292,6 +292,12 @@ final class EditorModel {
 
     func splitAtPlayhead() {
         let t = playhead
+        if case .subtitle(let id) = selection, let sub = project.subtitle(id: id), sub.start < t, t < sub.end {
+            var newID: UUID?
+            store.perform { newID = $0.splitSubtitle(id: id, at: t) }
+            if let newID { selection = .subtitle(newID) }
+            return
+        }
         if case .music(let id) = selection, let clip = project.music(id: id), clip.start < t, t < clip.end {
             store.perform { _ = $0.splitMusic(id: id, at: t) }
             return
@@ -299,6 +305,26 @@ final class EditorModel {
         var newID: UUID?
         store.perform { newID = $0.splitMain(at: t) }
         if let newID { selection = .video(newID) }
+    }
+
+    // MARK: 字幕编辑
+
+    /// 请求清空全部字幕（弹确认框）。
+    var confirmClearSubtitles = false
+
+    func clearSubtitles() {
+        store.perform { $0.removeAllSubtitles() }
+        if case .subtitle = selection { selection = nil }
+    }
+
+    func mergeSubtitleWithNext(_ id: UUID) {
+        store.perform { $0.mergeSubtitleWithNext(id: id) }
+        selection = .subtitle(id)
+    }
+
+    func removeSubtitle(_ id: UUID) {
+        store.perform { $0.removeSubtitle(id: id) }
+        if selection == .subtitle(id) { selection = nil }
     }
 
     func deleteSelection() {

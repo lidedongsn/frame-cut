@@ -131,6 +131,50 @@ final class ProjectEditingTests: XCTestCase {
         XCTAssertEqual(p.subtitles.count, 2)
     }
 
+    private func subs(_ items: [(Double, Double, String)]) -> Project {
+        var p = Project(name: "t")
+        p.replaceSubtitles(items.map { Subtitle(start: Time(seconds: $0.0), end: Time(seconds: $0.1), text: $0.2) })
+        return p
+    }
+
+    func testMergeSubtitleWithNext() {
+        var p = subs([(6.4, 8.4, "自己则带着白家上上"), (8.4, 10.1, "下下逃难去了西安"), (10.1, 12, "收留")])
+        XCTAssertTrue(p.mergeSubtitleWithNext(id: p.subtitles[0].id))
+        XCTAssertEqual(p.subtitles.map(\.text), ["自己则带着白家上上下下逃难去了西安", "收留"])
+        XCTAssertEqual(p.subtitles[0].start, Time(seconds: 6.4))
+        XCTAssertEqual(p.subtitles[0].end, Time(seconds: 10.1))
+        XCTAssertFalse(p.mergeSubtitleWithNext(id: p.subtitles[1].id), "最后一条没有下一条")
+    }
+
+    func testMergeSubtitleKeepsSpaceBetweenLatinWords() {
+        var p = subs([(0, 1, "Hello"), (1, 2, "world")])
+        p.mergeSubtitleWithNext(id: p.subtitles[0].id)
+        XCTAssertEqual(p.subtitles[0].text, "Hello world")
+    }
+
+    func testSplitSubtitleDividesTextByTime() {
+        var p = subs([(0, 4, "今天天气很好我们出发")])
+        let newID = p.splitSubtitle(id: p.subtitles[0].id, at: Time(seconds: 2))
+        XCTAssertNotNil(newID)
+        XCTAssertEqual(p.subtitles.map(\.text), ["今天天气很", "好我们出发"])
+        XCTAssertEqual(p.subtitles[0].end, Time(seconds: 2))
+        XCTAssertEqual(p.subtitles[1].start, Time(seconds: 2))
+        XCTAssertEqual(p.subtitles[1].id, newID)
+    }
+
+    func testSplitSubtitleOutsideOrAtEdgeDoesNothing() {
+        var p = subs([(1, 3, "你好世界")])
+        XCTAssertNil(p.splitSubtitle(id: p.subtitles[0].id, at: Time(seconds: 5)))
+        XCTAssertNil(p.splitSubtitle(id: p.subtitles[0].id, at: Time(seconds: 1.01)))
+        XCTAssertEqual(p.subtitles.count, 1)
+    }
+
+    func testRemoveAllSubtitles() {
+        var p = subs([(0, 1, "a"), (1, 2, "b")])
+        p.removeAllSubtitles()
+        XCTAssertTrue(p.subtitles.isEmpty)
+    }
+
     func testMissingAssets() {
         let p = makeProject(clipSeconds: [1])
         XCTAssertEqual(p.missingAssets(fileExists: { _ in false }).count, 1)

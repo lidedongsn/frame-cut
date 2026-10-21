@@ -183,6 +183,42 @@ extension Project {
         subtitles.removeAll { $0.id == id }
     }
 
+    public mutating func removeAllSubtitles() {
+        subtitles.removeAll()
+    }
+
+    /// 与下一条合并：时间取两条的并集，文字相连（两侧都是拉丁字母时补空格）。
+    @discardableResult
+    public mutating func mergeSubtitleWithNext(id: UUID) -> Bool {
+        guard let i = subtitles.firstIndex(where: { $0.id == id }), i + 1 < subtitles.count else { return false }
+        let next = subtitles.remove(at: i + 1)
+        let a = subtitles[i].text, b = next.text
+        let needsSpace = (a.last?.isASCII == true && a.last?.isLetter == true) && (b.first?.isASCII == true && b.first?.isLetter == true)
+        subtitles[i].text = a + (needsSpace ? " " : "") + b
+        subtitles[i].end = Time.max(subtitles[i].end, next.end)
+        return true
+    }
+
+    /// 在 t 处一分为二，文字按时间比例切开（之后再逐条校对）。返回后一条的 id。
+    @discardableResult
+    public mutating func splitSubtitle(id: UUID, at t: Time) -> UUID? {
+        guard let i = subtitles.firstIndex(where: { $0.id == id }) else { return nil }
+        var first = subtitles[i]
+        guard t - first.start >= EditLimits.minClipDuration, first.end - t >= EditLimits.minClipDuration else { return nil }
+        let chars = Array(first.text)
+        let ratio = (t - first.start).seconds / first.duration.seconds
+        let cut = chars.count < 2 ? chars.count : min(chars.count - 1, max(1, Int((Double(chars.count) * ratio).rounded())))
+        var second = first
+        second.id = UUID()
+        second.start = t
+        second.text = String(chars[cut...]).trimmingCharacters(in: .whitespaces)
+        first.end = t
+        first.text = String(chars[..<cut]).trimmingCharacters(in: .whitespaces)
+        subtitles[i] = first
+        subtitles.insert(second, at: i + 1)
+        return second.id
+    }
+
     public mutating func replaceSubtitles(_ subs: [Subtitle]) {
         subtitles = subs.sorted { $0.start < $1.start }
     }
