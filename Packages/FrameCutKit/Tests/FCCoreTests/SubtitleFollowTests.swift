@@ -79,6 +79,16 @@ final class SubtitleFollowTests: XCTestCase {
         XCTAssertEqual(times(s), ["A2-4", "B12-14", "C22-24"])
     }
 
+    func testFirstClipIntoEmptyTimelineKeepsSubtitles() {
+        var p = makeProject(clipSeconds: [10])
+        let asset = p.mainTrack[0].assetID
+        p.mainTrack = []
+        p.replaceSubtitles([Subtitle(start: t(2), end: t(4), text: "A")])
+        let s = EditorStore(project: p)
+        s.perform { _ = $0.appendToMain(assetID: asset) }
+        XCTAssertEqual(times(s), ["A2-4"])
+    }
+
     func testFollowDisabledLeavesSubtitles() {
         let s = store()
         s.perform { $0.subtitlesFollowMain = false }

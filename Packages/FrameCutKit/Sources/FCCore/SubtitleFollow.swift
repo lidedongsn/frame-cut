@@ -3,7 +3,9 @@ import Foundation
 /// 字幕跟随主轨：把字幕的时间线时间换算成「片段 + 源时间」，编辑后再换算回新的时间线时间。
 extension Project {
     /// 主轨编辑（from → self）后重新定位字幕。字幕取自 from，不是 self。
-    func subtitlesFollowingMain(from old: Project) -> [Subtitle] {
+    public func subtitlesFollowingMain(from old: Project) -> [Subtitle] {
+        // 原来没有片段时字幕没有可跟随的画面，保持原样
+        guard !old.mainTrack.isEmpty else { return old.subtitles }
         let oldLayout = TimelineLayout(project: old)
         let newLayout = TimelineLayout(project: self)
         let endShift = newLayout.duration - oldLayout.duration

@@ -3,9 +3,26 @@ import Foundation
 /// SRT 字幕文件读写。
 public enum SRT {
     public static func encode(_ subtitles: [Subtitle]) -> String {
-        subtitles.sorted { $0.start < $1.start }.enumerated().map { i, sub in
-            "\(i + 1)\n\(timestamp(sub.start)) --> \(timestamp(sub.end))\n\(sub.text)\n"
+        subtitles.sorted { $0.start < $1.start }.enumerated().map { i, sub -> String in
+            // 正文里的空行会被当成条目结束，压成单个换行
+            let text = sub.text.replacingOccurrences(of: "\n[ \t]*\n+", with: "\n", options: .regularExpression)
+            return "\(i + 1)\n\(timestamp(sub.start)) --> \(timestamp(sub.end))\n\(text)\n"
         }.joined(separator: "\n")
+    }
+
+    /// 从文件内容解析：有 BOM 按 BOM 取编码，否则先试 UTF-8，再试 GB18030（Windows 中文记事本常见）。
+    /// 不能无 BOM 地试 UTF-16：几乎任何偶数长度的字节都能“解码”成乱码。
+    public static func decode(data: Data) -> [Subtitle] {
+        let text: String?
+        if data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF]) {
+            text = String(data: data, encoding: .utf16)
+        } else if let utf8 = String(data: data, encoding: .utf8) {
+            text = utf8
+        } else {
+            let gb = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
+            text = String(data: data, encoding: String.Encoding(rawValue: gb))
+        }
+        return text.map(decode) ?? []
     }
 
     /// 宽松解析：兼容 CRLF、BOM、毫秒用点号、多行文字、时间行后的坐标，去掉 <i> 等标签。

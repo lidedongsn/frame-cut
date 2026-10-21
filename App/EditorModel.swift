@@ -324,13 +324,11 @@ final class EditorModel {
         panel.title = "导入 SRT 字幕"
         panel.allowedContentTypes = [UTType(filenameExtension: "srt") ?? .plainText]
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        guard let data = try? Data(contentsOf: url),
-              let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf16)
-              ?? String(data: data, encoding: String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))) else {
+        guard let data = try? Data(contentsOf: url) else {
             errorMessage = "无法读取字幕文件"
             return
         }
-        let subs = SRT.decode(text)
+        let subs = SRT.decode(data: data)
         guard !subs.isEmpty else {
             errorMessage = "没有在文件里找到 SRT 字幕"
             return
@@ -574,7 +572,11 @@ final class EditorModel {
                 }
                 let subs = segments.map { Subtitle(start: $0.start, end: $0.end, text: $0.text) }
                 self?.store.perform {
-                    $0.replaceSubtitles(subs)
+                    // 识别期间如果剪辑过视频，字幕按识别开始时的时间线换算到现在的时间线
+                    var base = project
+                    base.replaceSubtitles(subs)
+                    let edited = TimelineLayout(project: $0) != TimelineLayout(project: base)
+                    $0.replaceSubtitles(edited && $0.subtitlesFollowMain && original ? $0.subtitlesFollowingMain(from: base) : base.subtitles)
                     // 只来自视频原声的字幕跟随视频剪辑；只来自音频轨（旁白）的不跟随
                     if original != music { $0.subtitlesFollowMain = original }
                 }

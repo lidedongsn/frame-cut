@@ -109,8 +109,13 @@ public actor WhisperKitTranscriber: Transcriber {
         modelsDirectory.appendingPathComponent("models/argmaxinc/whisperkit-coreml/\(variant)", isDirectory: true)
     }
 
-    var isModelDownloaded: Bool {
-        FileManager.default.fileExists(atPath: Self.modelFolder(variant).appendingPathComponent("AudioEncoder.mlmodelc").path)
+    var isModelDownloaded: Bool { Self.isModelComplete(at: Self.modelFolder(variant)) }
+
+    /// 三个核心模型都在才算下载完整（下载中断时可能只有一部分）。
+    static func isModelComplete(at folder: URL) -> Bool {
+        ["MelSpectrogram.mlmodelc", "AudioEncoder.mlmodelc", "TextDecoder.mlmodelc"].allSatisfy {
+            FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+        }
     }
 
     /// 分词器仓库：large-v3 系列共用一个，其余按尺寸。

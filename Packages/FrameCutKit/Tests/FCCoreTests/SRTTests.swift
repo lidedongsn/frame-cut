@@ -37,4 +37,19 @@ final class SRTTests: XCTestCase {
     func testDecodeSkipsGarbage() {
         XCTAssertTrue(SRT.decode("not a subtitle file").isEmpty)
     }
+
+    func testDecodeDataDetectsEncoding() {
+        let text = "1\n00:00:01,000 --> 00:00:02,000\n你好世界\n"
+        let gb = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue))
+        for data in [Data(text.utf8),
+                     text.data(using: String.Encoding(rawValue: gb))!,
+                     text.data(using: .utf16)!] {  // .utf16 带 BOM
+            XCTAssertEqual(SRT.decode(data: data).first?.text, "你好世界")
+        }
+    }
+
+    func testEncodeCollapsesBlankLinesInsideText() {
+        let subs = [Subtitle(start: .zero, end: Time(seconds: 1), text: "上\n\n下")]
+        XCTAssertEqual(SRT.decode(SRT.encode(subs)).first?.text, "上\n下")
+    }
 }

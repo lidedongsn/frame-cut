@@ -3,7 +3,7 @@ import FCEngine
 import SwiftUI
 
 /// 预览画面上直接调整字幕：拖动移动位置，拖角或双指捏合缩放字号，点击选中。
-/// 样式对全部字幕生效；暂停时显示，播放时隐藏不挡画面。
+/// 样式对全部字幕生效；暂停时可操作，播放时不响应。
 struct SubtitleOverlay: View {
     @Bindable var model: EditorModel
     let canvas: CGSize
@@ -34,9 +34,9 @@ struct SubtitleOverlay: View {
                     Rectangle().fill(Theme.accent).frame(width: 1, height: canvas.height)
                         .offset(x: canvas.width / 2)
                 }
+                // 平时不画框，鼠标移上去或选中时才显示，不干扰看画面
                 RoundedRectangle(cornerRadius: 3)
-                    .strokeBorder(active ? Theme.accent : Color.white.opacity(0.35),
-                                  style: StrokeStyle(lineWidth: 1, dash: active ? [] : [4, 3]))
+                    .strokeBorder(active ? Theme.accent : Color.clear, lineWidth: 1)
                     .contentShape(Rectangle())
                     .frame(width: rect.width + 8, height: rect.height + 8)
                     .offset(x: rect.minX - 4, y: rect.minY - 4)

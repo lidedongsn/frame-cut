@@ -8,6 +8,18 @@ final class TranscriberTests: XCTestCase {
         XCTAssertEqual(WhisperKitTranscriber.clean(" <|zh|><|0.00|>今天天氣很好<|2.00|> "), "今天天气很好")
     }
 
+    /// 下载中断只留下部分模型文件时不算已下载，下次会重新下载补齐。
+    func testPartialModelFolderIsNotComplete() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("fc-model-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("AudioEncoder.mlmodelc"), withIntermediateDirectories: true)
+        XCTAssertFalse(WhisperKitTranscriber.isModelComplete(at: dir))
+        for name in ["MelSpectrogram.mlmodelc", "TextDecoder.mlmodelc"] {
+            try FileManager.default.createDirectory(at: dir.appendingPathComponent(name), withIntermediateDirectories: true)
+        }
+        XCTAssertTrue(WhisperKitTranscriber.isModelComplete(at: dir))
+    }
+
     /// 并发分块会随机丢掉整段识别结果；首词置信度门槛会把哭腔、配乐下开头的整个窗口丢掉。
     func testDecodingOptionsAvoidDroppingWindows() {
         let options = WhisperKitTranscriber.decodingOptions(language: .chinese)
