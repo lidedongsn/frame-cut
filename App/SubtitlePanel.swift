@@ -233,7 +233,7 @@ private struct SubtitleRow: View {
                 Text(sub.start.displayString)
                     .font(.system(size: 10).monospacedDigit())
                     .foregroundStyle(active ? Theme.accent : Theme.tertiary)
-                    .frame(width: 54, alignment: .leading)
+                    .frame(width: 70, alignment: .leading)
                     .padding(.top, 3)
             }
             .buttonStyle(.plain)

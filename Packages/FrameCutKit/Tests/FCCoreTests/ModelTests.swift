@@ -10,6 +10,24 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(Time(Time(seconds: 2.5).cmTime), Time(seconds: 2.5))
     }
 
+    func testDisplayStringIncludesHours() {
+        XCTAssertEqual(Time(seconds: 24.35).displayString, "00:00:24.35")
+        XCTAssertEqual(Time(seconds: 3912.3).displayString, "01:05:12.30")
+        XCTAssertEqual(Time(seconds: -1).displayString, "00:00:00.00")
+    }
+
+    func testDisplayStringRoundsWithoutSixtySeconds() {
+        XCTAssertEqual(Time(seconds: 59.996).displayString, "00:01:00.00")
+        XCTAssertEqual(Time(seconds: 3599.999).displayString, "01:00:00.00")
+    }
+
+    func testRulerLabel() {
+        XCTAssertEqual(Time.rulerLabel(seconds: 65, major: 5), "00:01:05")
+        XCTAssertEqual(Time.rulerLabel(seconds: 3725, major: 60), "01:02:05")
+        XCTAssertEqual(Time.rulerLabel(seconds: 4.5, major: 0.5), "00:00:04.5")
+        XCTAssertEqual(Time.rulerLabel(seconds: 0.25, major: 0.25), "00:00:00.25")
+    }
+
     func testClipTimelineDuration() {
         var clip = VideoClip(assetID: UUID(), sourceIn: .zero, sourceOut: Time(seconds: 4))
         clip.speed = 2

@@ -40,10 +40,22 @@ public struct Time: Codable, Hashable, Comparable, AdditiveArithmetic, Sendable 
     public func clamped(_ lower: Time, _ upper: Time) -> Time { Time.max(lower, Time.min(upper, self)) }
 
     /// 形如 01:23.45 的显示文本。
+    /// 时:分:秒.百分秒，如 00:01:05.30。先取整到百分秒再拆分，不会出现 60 秒。
     public var displayString: String {
-        let total = Swift.max(0, seconds)
-        let m = Int(total) / 60
-        let s = total - Double(m * 60)
-        return String(format: "%02d:%05.2f", m, s)
+        let cs = Int((Swift.max(0, seconds) * 100).rounded())
+        return String(format: "%02d:%02d:%02d.%02d", cs / 360_000, cs / 6000 % 60, cs / 100 % 60, cs % 100)
+    }
+
+    /// 时间线刻度：主刻度为整秒时显示 时:分:秒，否则带小数（0.25 秒这类刻度带两位）。
+    public static func rulerLabel(seconds: Double, major: Double) -> String {
+        if major >= 1 {
+            let s = Int(Swift.max(0, seconds).rounded())
+            return String(format: "%02d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+        }
+        if (major * 10).rounded() != major * 10 {
+            return Time(seconds: seconds).displayString
+        }
+        let ds = Int((Swift.max(0, seconds) * 10).rounded())
+        return String(format: "%02d:%02d:%02d.%d", ds / 36000, ds / 600 % 60, ds / 10 % 60, ds % 10)
     }
 }

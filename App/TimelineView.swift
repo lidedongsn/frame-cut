@@ -285,11 +285,8 @@ private struct RulerView: View {
         }
     }
 
-    /// 主刻度为整秒时显示 mm:ss，否则带一位小数。
     private func label(_ t: Double, major: Double) -> String {
-        let m = Int(t) / 60
-        let s = t - Double(m * 60)
-        return major >= 1 ? String(format: "%02d:%02d", m, Int(s.rounded())) : String(format: "%02d:%04.1f", m, s)
+        Time.rulerLabel(seconds: t, major: major)
     }
 }
 

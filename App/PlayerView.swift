@@ -59,7 +59,7 @@ struct PlayerPanel: View {
                 Text(model.playhead.displayString)
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 80, alignment: .trailing)
+                    .frame(width: 96, alignment: .trailing)
                 Button { model.step(frames: -1) } label: { Image(systemName: "backward.frame.fill") }
                     .buttonStyle(.plain).help("上一帧 ←")
                 Button { model.togglePlay() } label: {
@@ -72,7 +72,7 @@ struct PlayerPanel: View {
                 Text(model.duration.displayString)
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(Theme.secondary)
-                    .frame(width: 80, alignment: .leading)
+                    .frame(width: 96, alignment: .leading)
             }
             .foregroundStyle(Theme.text)
             .frame(maxWidth: .infinity)
