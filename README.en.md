@@ -149,8 +149,6 @@ Logs: open the Console app and filter by subsystem `com.lidedongsn.framecut`
 | `Packages/FrameCutKit/Sources/FCTranscribe` | On-device captions with WhisperKit (falls back to the hf-mirror host when needed) |
 | `App` | SwiftUI interface |
 
-Design document (Chinese): `docs/superpowers/specs/2026-10-16-framecut-mvp-design.md`
-
 ## License
 
 [MIT](LICENSE). Speech recognition is powered by [WhisperKit](https://github.com/argmaxinc/WhisperKit) (MIT) and OpenAI's Whisper models.

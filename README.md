@@ -144,8 +144,6 @@ FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testReal
 | `Packages/FrameCutKit/Sources/FCTranscribe` | WhisperKit 本地字幕识别（官方源不可达时自动使用 hf-mirror 镜像） |
 | `App` | SwiftUI 界面 |
 
-设计文档：`docs/superpowers/specs/2026-10-16-framecut-mvp-design.md`
-
 ## 许可证
 
 [MIT](LICENSE)。语音识别基于 [WhisperKit](https://github.com/argmaxinc/WhisperKit)（MIT）与 OpenAI Whisper 模型。

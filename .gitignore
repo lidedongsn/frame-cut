@@ -8,3 +8,6 @@ xcuserdata/
 .swiftpm/
 TestMedia/
 .superpowers/
+
+# 开发过程中的内部文档，不进仓库
+docs/superpowers/
