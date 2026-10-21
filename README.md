@@ -6,7 +6,7 @@
   <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><img src="https://img.shields.io/github/v/release/lidedongsn/frame-cut?label=release&color=29d1db" alt="release"></a>
   <a href="https://github.com/lidedongsn/frame-cut/releases"><img src="https://img.shields.io/github/downloads/lidedongsn/frame-cut/total?color=29d1db" alt="downloads"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Apple%20silicon-M1%E2%80%93M4-black" alt="Apple silicon">
+  <img src="https://img.shields.io/badge/Apple%20silicon-M1%20%E5%8F%8A%E6%9B%B4%E6%96%B0-black" alt="Apple silicon">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
 </p>
 
@@ -24,7 +24,7 @@ FrameCut 只做这件事，并把它做到又快又顺手。所有功能免费�
 
 ### 只为 Apple 芯片而生
 
-FrameCut 只支持 Apple 芯片（M1 / M2 / M3 / M4），不为兼容 Intel 背包袱。
+FrameCut 只支持 Apple 芯片（M1 及更新的 M 系列芯片），不为兼容 Intel 背包袱。
 芯片里每一块专用硬件都被派上了用场，繁重的工作几乎不占用 CPU：
 
 | 工作 | 交给谁 | 带来什么 |
@@ -90,7 +90,7 @@ iPhone 拍的视频大多是 HDR（杜比视界 / HLG）。FrameCut 能自动识
 
 > FrameCut 目前没有向 Apple 付费注册开发者签名，所以第一次打开需要手动放行。
 
-**系统要求**：macOS 14 或更新版本，Apple 芯片（M1 / M2 / M3 / M4）。
+**系统要求**：macOS 14 或更新版本，Apple 芯片（M1 及更新的 M 系列芯片）。
 
 ## 喜欢的话
 

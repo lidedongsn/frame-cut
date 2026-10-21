@@ -6,7 +6,7 @@
   <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><img src="https://img.shields.io/github/v/release/lidedongsn/frame-cut?label=release&color=29d1db" alt="release"></a>
   <a href="https://github.com/lidedongsn/frame-cut/releases"><img src="https://img.shields.io/github/downloads/lidedongsn/frame-cut/total?color=29d1db" alt="downloads"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
-  <img src="https://img.shields.io/badge/Apple%20silicon-M1%E2%80%93M4-black" alt="Apple silicon">
+  <img src="https://img.shields.io/badge/Apple%20silicon-M1%20or%20later-black" alt="Apple silicon">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
 </p>
 
@@ -25,7 +25,7 @@ Every feature is free, exports carry no watermark, and there is no account to si
 
 ### Built only for Apple silicon
 
-FrameCut runs on Apple silicon (M1 / M2 / M3 / M4) only, with no Intel compatibility baggage.
+FrameCut runs on Apple silicon (M1 or later) only, with no Intel compatibility baggage.
 Every dedicated block on the chip is put to work, so the heavy lifting barely touches the CPU:
 
 | Work | Runs on | What you get |
@@ -99,7 +99,7 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 
 > FrameCut is not yet signed with a paid Apple Developer ID, which is why macOS asks you to approve it the first time.
 
-**Requirements**: macOS 14 or later, Apple silicon (M1 / M2 / M3 / M4).
+**Requirements**: macOS 14 or later, Apple silicon (M1 or later).
 
 ## Like it?
 
