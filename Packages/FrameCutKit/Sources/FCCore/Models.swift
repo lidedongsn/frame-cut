@@ -428,8 +428,38 @@ public struct SubtitleStyle: Codable, Hashable, Sendable {
     public var backgroundColor = RGBA.clear
     /// 字幕中心距画布顶部的比例。
     public var verticalPosition: Double = 0.85
+    /// 字幕中心距画布左边的比例。
+    public var horizontalPosition: Double = 0.5
+
+    /// 字号可调范围（画布高度的比例）。
+    public static let fontSizeRange: ClosedRange<Double> = 0.03...0.12
 
     public init() {}
+
+    /// 字幕在画布上的位置（左上角为原点）：中心对准设定位置，超出画布时推回画内。预览与导出共用。
+    public func frame(textSize: CGSize, canvas: CGSize) -> CGRect {
+        let x = canvas.width * horizontalPosition - textSize.width / 2
+        let y = canvas.height * verticalPosition - textSize.height / 2
+        return CGRect(x: min(max(0, x), max(0, canvas.width - textSize.width)),
+                      y: min(max(0, y), max(0, canvas.height - textSize.height)),
+                      width: textSize.width, height: textSize.height)
+    }
+}
+
+extension SubtitleStyle {
+    // 旧工程没有新增字段，缺省时取默认值
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = SubtitleStyle()
+        fontName = try c.decodeIfPresent(String.self, forKey: .fontName) ?? d.fontName
+        fontSize = try c.decodeIfPresent(Double.self, forKey: .fontSize) ?? d.fontSize
+        textColor = try c.decodeIfPresent(RGBA.self, forKey: .textColor) ?? d.textColor
+        strokeColor = try c.decodeIfPresent(RGBA.self, forKey: .strokeColor) ?? d.strokeColor
+        strokeWidth = try c.decodeIfPresent(Double.self, forKey: .strokeWidth) ?? d.strokeWidth
+        backgroundColor = try c.decodeIfPresent(RGBA.self, forKey: .backgroundColor) ?? d.backgroundColor
+        verticalPosition = try c.decodeIfPresent(Double.self, forKey: .verticalPosition) ?? d.verticalPosition
+        horizontalPosition = try c.decodeIfPresent(Double.self, forKey: .horizontalPosition) ?? d.horizontalPosition
+    }
 }
 
 // MARK: - 兼容旧工程文件：新增字段缺省时取默认值

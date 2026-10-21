@@ -36,6 +36,12 @@ struct PlayerPanel: View {
                                     .padding(8)
                             }
                         }
+                        .overlay {
+                            GeometryReader { g in
+                                SubtitleOverlay(model: model, canvas: g.size)
+                            }
+                            .coordinateSpace(name: "subtitleCanvas")
+                        }
                         // 预览渲染分辨率跟随画面实际大小（物理像素）
                         .background(GeometryReader { g in
                             Color.clear

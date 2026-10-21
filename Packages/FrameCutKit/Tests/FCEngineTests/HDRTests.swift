@@ -133,6 +133,29 @@ final class HDRRenderTests: XCTestCase {
         XCTAssertEqual(peak, 1.0, accuracy: 0.05, "HDR 中白色字幕应在参考白，而非峰值")
     }
 
+    func testSubtitleHorizontalPositionMovesText() {
+        func brightness(hp: Double, inside rect: CGRect) -> Float {
+            let sub = Subtitle(start: .zero, end: Time(seconds: 1), text: "██")
+            var style = SubtitleStyle()
+            style.verticalPosition = 0.5
+            style.horizontalPosition = hp
+            style.strokeWidth = 0
+            let instruction = RenderInstruction(timeRange: CMTimeRange(start: .zero, duration: CMTime(value: 1, timescale: 1)), layers: [],
+                                                transition: nil, scene: RenderScene(subtitles: [sub], style: style), trackIDs: [],
+                                                output: .sdr, colorMode: .sdr)
+            let image = FrameRenderer.shared.composeFrame(instruction: instruction, time: Time(seconds: 0.5), canvas: CGSize(width: 640, height: 360)) { _ in nil }
+            var px = [Float](repeating: 0, count: Int(rect.width * rect.height) * 4)
+            FrameRenderer.shared.context.render(image, toBitmap: &px, rowBytes: Int(rect.width) * 16, bounds: rect,
+                                                format: .RGBAf, colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!)
+            return stride(from: 0, to: px.count, by: 4).map { px[$0] }.max() ?? 0
+        }
+        let left = CGRect(x: 100, y: 175, width: 40, height: 10)
+        let center = CGRect(x: 300, y: 175, width: 40, height: 10)
+        XCTAssertGreaterThan(brightness(hp: 0.2, inside: left), 0.9)
+        XCTAssertLessThan(brightness(hp: 0.2, inside: center), 0.1)
+        XCTAssertGreaterThan(brightness(hp: 0.5, inside: center), 0.9)
+    }
+
     private func assertToneMapped(_ v: [Float], file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertEqual(zip(v, v.dropFirst()).allSatisfy { $0 < $1 }, true, "应严格递增：\(v)", file: file, line: line)
         XCTAssertLessThanOrEqual(v[3], 1.05, file: file, line: line)

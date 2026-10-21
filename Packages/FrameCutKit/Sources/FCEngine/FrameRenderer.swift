@@ -79,10 +79,10 @@ final class FrameRenderer: @unchecked Sendable {
         }
         if let sub = instruction.scene.activeSubtitle(at: time),
            let text = SubtitleRenderer.image(text: sub.text, style: instruction.scene.style, canvas: canvas) {
-            let cx = (canvas.width - text.extent.width) / 2
-            let cy = canvas.height * (1 - instruction.scene.style.verticalPosition) - text.extent.height / 2
-            let y = min(max(0, cy), canvas.height - text.extent.height)
-            frame = text.transformed(by: CGAffineTransform(translationX: cx.rounded(), y: y.rounded())).composited(over: frame)
+            let r = instruction.scene.style.frame(textSize: text.extent.size, canvas: canvas)
+            // Core Image 原点在左下
+            let y = canvas.height - r.maxY
+            frame = text.transformed(by: CGAffineTransform(translationX: r.minX.rounded(), y: y.rounded())).composited(over: frame)
         }
         return frame.cropped(to: rect)
     }

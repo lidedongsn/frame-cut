@@ -280,10 +280,20 @@ private struct StyleEditor: View {
                 ForEach(fonts, id: \.0) { Text($0.1).tag($0.0) }
             }
             .font(.system(size: 12))
-            LabeledSlider(title: "字号", value: style(\.fontSize), range: 0.03...0.12,
+            Text("也可以在预览画面里直接拖动字幕调整位置，拖右下角调整大小。")
+                .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            LabeledSlider(title: "字号", value: style(\.fontSize), range: SubtitleStyle.fontSizeRange,
                           format: { "\(Int($0 * 1000))" }, onEditing: model.coalesce)
-            LabeledSlider(title: "位置（距顶部）", value: style(\.verticalPosition), range: 0.1...0.95,
+            LabeledSlider(title: "上下位置", value: style(\.verticalPosition), range: 0...1,
                           format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
+            HStack(alignment: .bottom, spacing: 8) {
+                LabeledSlider(title: "左右位置", value: style(\.horizontalPosition), range: 0...1,
+                              format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
+                Button("居中") { model.store.perform { $0.subtitleStyle.horizontalPosition = 0.5 } }
+                    .buttonStyle(PanelButtonStyle())
+                    .disabled(model.project.subtitleStyle.horizontalPosition == 0.5)
+            }
             LabeledSlider(title: "描边粗细", value: style(\.strokeWidth), range: 0...0.3,
                           format: { "\(Int($0 * 100))" }, onEditing: model.coalesce)
             HStack(spacing: 14) {
