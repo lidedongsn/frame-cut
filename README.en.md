@@ -54,7 +54,7 @@ automatically if rendering falls behind, so playback stays smooth.
 ### Small and tidy
 
 - **2.3 MB download, about 7 MB installed.** No embedded browser engine, no bundled plug-ins, only native system frameworks.
-- The speech model (about 470 MB) is **downloaded the first time you generate captions**. If you never use
+- The speech model (about 600 MB) is **downloaded the first time you generate captions**. If you never use
   captions it takes no space, and you can delete it from the Captions panel with one click.
 - Every in-memory cache has a limit and is released when you close a project or the system runs low on memory;
   the speech model unloads itself after three idle minutes.
@@ -84,7 +84,7 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 | **Color** | 10 looks or your own .cube LUTs; brightness, contrast, highlights, shadows, saturation, vibrance, temperature, tint; HSL for 8 color ranges; sharpen and vignette; copy/paste grades (⌥⌘C / ⌥⌘V), hold to compare with the original, save your own presets |
 | **Transitions** | Dissolve, dip to black, dip to white, push in four directions, slide, wipe, zoom, blur; apply to all clips at once |
 | **Audio** | Clip volume and mute; background music with position, trim, split, volume and fades |
-| **Captions** | Generated on-device from speech, long sentences split into lines automatically, edit line by line, one shared style |
+| **Captions** | Generated on-device from speech (Whisper large-v3 turbo; Chinese, English or auto-detect), long sentences split into lines automatically, edit line by line, one shared style |
 | **Export** | One-click export with settings matched to your footage; 720p / 1080p / 4K, 24–60 fps, H.264 / HEVC hardware encoding, no watermark |
 | **Projects** | Autosave every 2 seconds, recent projects, relink media that has been moved |
 
@@ -123,7 +123,7 @@ Optional measurements (skipped by default):
 
 ```bash
 make bench                                                                                       # export, per-stage and encoder benchmarks
-FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription   # real speech recognition (downloads ~480 MB model)
+FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription   # real speech recognition (downloads ~600 MB model)
 ```
 
 Logs: open the Console app and filter by subsystem `com.lidedongsn.framecut`
@@ -134,7 +134,7 @@ Logs: open the Console app and filter by subsystem `com.lidedongsn.framecut`
 | Location | Contents | How to remove |
 |---|---|---|
 | Project files `*.framecut` | Project data (references media, never copies it) | Delete the project |
-| `~/Library/Application Support/FrameCut/Models` | Speech model, about 470 MB | **Delete** in the Captions panel |
+| `~/Library/Application Support/FrameCut/Models` | Speech model, about 600 MB | **Delete** in the Captions panel |
 | `~/Library/Application Support/FrameCut/LUTs` | Imported LUTs | Right-click in the Filters panel |
 | `~/Library/Application Support/FrameCut/GradePresets.json` | Color presets | Right-click in the Filters panel |
 | `~/Library/Caches/FrameCut` | A few KB of internal files | Managed automatically |

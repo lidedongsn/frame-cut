@@ -26,22 +26,59 @@ public enum TranscribeProgress: Sendable {
     case transcribing(Double)
 }
 
+/// 识别语言。指定语言比自动检测更准，也避免把中文误判成其他语言。
+public enum TranscribeLanguage: String, CaseIterable, Sendable {
+    case chinese = "zh"
+    case english = "en"
+    case auto
+
+    public var title: String {
+        switch self {
+        case .chinese: "中文"
+        case .english: "英文"
+        case .auto: "自动"
+        }
+    }
+
+    var code: String? { self == .auto ? nil : rawValue }
+
+    /// 引导模型输出的提示语：中文用简体并带标点。
+    var prompt: String? {
+        switch self {
+        case .chinese: "以下是普通话的句子，使用简体中文和标点符号。"
+        case .english: nil
+        case .auto: nil
+        }
+    }
+}
+
 public protocol Transcriber: Sendable {
     /// samples：16kHz 单声道。返回的时间与 samples 起点对齐。
-    func transcribe(samples: [Float], progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> [TranscriptSegment]
+    func transcribe(samples: [Float], language: TranscribeLanguage,
+                    progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> [TranscriptSegment]
 }
 
 /// 本地 Whisper 识别。首次使用下载模型到 ~/Library/Application Support/FrameCut/Models。
 public actor WhisperKitTranscriber: Transcriber {
     public static let shared = WhisperKitTranscriber()
-    public static let modelVariant = "openai_whisper-small"
+    /// large-v3 turbo（压缩到约 630MB）：中文准确率远高于 small，在 M 芯片神经网络引擎上依然很快。
+    public static let defaultVariant = "openai_whisper-large-v3-v20240930_626MB"
+    /// 旧版本用过的模型，换模型后自动删除以免占用磁盘。
+    static let legacyVariants = ["openai_whisper-small"]
+
+    /// 默认模型的下载大小，界面提示用。
+    public static let downloadSizeMB = 600
+
+    public let variant: String
 
     private var pipe: WhisperKit?
-    /// 识别完成后空闲多久释放模型（约 500MB 内存）。
+    /// 识别完成后空闲多久释放模型（大模型占用较多内存）。
     public static let idleUnloadSeconds: UInt64 = 180
     private var useGeneration = 0
 
-    public init() {}
+    public init(variant: String = WhisperKitTranscriber.defaultVariant) {
+        self.variant = variant
+    }
 
     public var isLoaded: Bool { pipe != nil }
 
@@ -77,15 +114,29 @@ public actor WhisperKitTranscriber: Transcriber {
         return base.appendingPathComponent("FrameCut/Models", isDirectory: true)
     }
 
-    static var expectedModelFolder: URL {
-        modelsDirectory.appendingPathComponent("models/argmaxinc/whisperkit-coreml/\(modelVariant)", isDirectory: true)
+    static func modelFolder(_ variant: String) -> URL {
+        modelsDirectory.appendingPathComponent("models/argmaxinc/whisperkit-coreml/\(variant)", isDirectory: true)
     }
 
-    public static var isModelDownloaded: Bool {
-        FileManager.default.fileExists(atPath: expectedModelFolder.appendingPathComponent("AudioEncoder.mlmodelc").path)
+    var isModelDownloaded: Bool {
+        FileManager.default.fileExists(atPath: Self.modelFolder(variant).appendingPathComponent("AudioEncoder.mlmodelc").path)
     }
 
-    public func transcribe(samples: [Float], progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> [TranscriptSegment] {
+    /// 分词器仓库：large-v3 系列共用一个，其余按尺寸。
+    var tokenizerRepo: String {
+        variant.contains("large-v3") ? "openai/whisper-large-v3" : "openai/whisper-small"
+    }
+
+    /// 删除旧版本留下的模型与分词器。
+    static func removeLegacyModels() {
+        for legacy in legacyVariants {
+            try? FileManager.default.removeItem(at: modelFolder(legacy))
+        }
+        try? FileManager.default.removeItem(at: modelsDirectory.appendingPathComponent("models/openai/whisper-small"))
+    }
+
+    public func transcribe(samples: [Float], language: TranscribeLanguage = .chinese,
+                           progress: @escaping @Sendable (TranscribeProgress) -> Void) async throws -> [TranscriptSegment] {
         guard !samples.isEmpty else { return [] }
         useGeneration += 1
         defer { scheduleIdleUnload() }
@@ -93,9 +144,12 @@ public actor WhisperKitTranscriber: Transcriber {
         progress(.transcribing(0))
 
         let total = Float(samples.count) / 16_000
-        let options = DecodingOptions(
-            verbose: false, task: .transcribe, language: nil, temperature: 0, usePrefillPrompt: true,
-            detectLanguage: true, skipSpecialTokens: true, withoutTimestamps: false, chunkingStrategy: .vad)
+        var options = DecodingOptions(
+            verbose: false, task: .transcribe, language: language.code, temperature: 0, usePrefillPrompt: true,
+            detectLanguage: language.code == nil, skipSpecialTokens: true, withoutTimestamps: false, chunkingStrategy: .vad)
+        if let prompt = language.prompt, let tokenizer = pipe.tokenizer {
+            options.promptTokens = tokenizer.encode(text: " " + prompt).filter { $0 < tokenizer.specialTokens.specialTokenBegin }
+        }
         let results = try await pipe.transcribe(audioArray: samples, decodeOptions: options, callback: nil) { segments in
             if let end = segments.map(\.end).max(), total > 0 { progress(.transcribing(Double(min(1, end / total)))) }
         }
@@ -118,21 +172,22 @@ public actor WhisperKitTranscriber: Transcriber {
         for endpoint in Self.endpoints {
             do {
                 let folder: URL
-                if Self.isModelDownloaded {
-                    folder = Self.expectedModelFolder
+                if isModelDownloaded {
+                    folder = Self.modelFolder(variant)
                 } else {
                     progress(.downloading(0))
-                    folder = try await WhisperKit.download(variant: Self.modelVariant, downloadBase: Self.modelsDirectory,
+                    folder = try await WhisperKit.download(variant: variant, downloadBase: Self.modelsDirectory,
                                                            endpoint: endpoint) { p in
                         progress(.downloading(p.fractionCompleted))
                     }
                 }
-                try await Self.ensureTokenizer(endpoint: endpoint)
+                try await Self.ensureTokenizer(repo: tokenizerRepo, endpoint: endpoint)
                 progress(.loading)
                 let config = WhisperKitConfig(modelEndpoint: endpoint, modelFolder: folder.path, tokenizerFolder: Self.modelsDirectory,
                                               verbose: false, logLevel: .error, prewarm: true, load: true, download: false)
                 let pipe = try await WhisperKit(config)
                 self.pipe = pipe
+                if variant == Self.defaultVariant { Self.removeLegacyModels() }
                 return pipe
             } catch {
                 lastError = error
@@ -141,16 +196,14 @@ public actor WhisperKitTranscriber: Transcriber {
         throw lastError ?? TranscribeError.downloadFailed
     }
 
-    static let tokenizerRepo = "openai/whisper-small"
-
     /// WhisperKit 的分词器下载固定走官方源，这里先从可用源下载到它会优先读取的本地目录。
-    static func ensureTokenizer(endpoint: String) async throws {
-        let folder = modelsDirectory.appendingPathComponent("models/\(tokenizerRepo)", isDirectory: true)
+    static func ensureTokenizer(repo: String, endpoint: String) async throws {
+        let folder = modelsDirectory.appendingPathComponent("models/\(repo)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for name in ["tokenizer.json", "tokenizer_config.json"] {
             let dest = folder.appendingPathComponent(name)
             if FileManager.default.fileExists(atPath: dest.path) { continue }
-            let url = URL(string: "\(endpoint)/\(tokenizerRepo)/resolve/main/\(name)")!
+            let url = URL(string: "\(endpoint)/\(repo)/resolve/main/\(name)")!
             let (tmp, response) = try await URLSession.shared.download(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw TranscribeError.downloadFailed }
             try? FileManager.default.removeItem(at: dest)

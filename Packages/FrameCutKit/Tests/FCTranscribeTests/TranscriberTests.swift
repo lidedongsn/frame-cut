@@ -89,4 +89,91 @@ final class ModelStorageTests: XCTestCase {
         let loaded = await t.isLoaded
         XCTAssertFalse(loaded)
     }
+
+    func testCharacterErrorRateIgnoresPunctuation() {
+        XCTAssertEqual(Self.characterErrorRate(reference: "今天，天气好。", hypothesis: "今天天气好"), 0)
+        XCTAssertEqual(Self.characterErrorRate(reference: "今天天气好", hypothesis: "今天天汽好"), 0.2, accuracy: 1e-9)
+    }
+
+    /// 中文准确率评测：不同语速朗读一段 vlog 口播并混入环境噪声，输出字错率（CER）。
+    /// FC_TRANSCRIBE=1 运行；FC_VARIANT 指定模型，FC_LANG 指定语言（zh / en / auto）。
+    func testChineseAccuracy() async throws {
+        let env = ProcessInfo.processInfo.environment
+        guard env["FC_TRANSCRIBE"] == "1" else { throw XCTSkip("设置 FC_TRANSCRIBE=1 运行") }
+        let script: [(Int, String)] = [
+            (180, "哈喽大家好，欢迎回到我的频道。今天带大家去杭州西湖边走一走。"),
+            (220, "我们早上七点就出门了，人还不算多，空气特别清新。"),
+            (260, "先去断桥拍了几张照片，然后沿着苏堤一直往南走。"),
+            (200, "中午在一家本地小馆子吃了西湖醋鱼和东坡肉，味道真的很不错。"),
+            (240, "下午租了一条小船，在湖上漂了大概40分钟，价格是150块。"),
+            (280, "这次用的是 iPhone 拍的，全程开了 HDR，晚上的灯光效果特别好看。"),
+            (220, "如果你们也喜欢这种慢节奏的旅行，记得点赞关注，我们下期再见。"),
+        ]
+        let dir = FileManager.default.temporaryDirectory
+        var samples: [Float] = []
+        for (i, (rate, line)) in script.enumerated() {
+            let aiff = dir.appendingPathComponent("fc-eval-\(i).aiff")
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+            p.arguments = ["-v", "Tingting", "-r", "\(rate)", "-o", aiff.path, line]
+            try p.run()
+            p.waitUntilExit()
+            samples += try Self.load16k(aiff)
+            samples += [Float](repeating: 0, count: 8_000)
+        }
+        // 约 20dB 信噪比的环境噪声，模拟户外收音。
+        var rng = SystemRandomNumberGenerator()
+        let rms = sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
+        let noise = rms * 0.1
+        samples = samples.map { $0 + Float.random(in: -1...1, using: &rng) * noise * 1.7 }
+
+        let variant = env["FC_VARIANT"] ?? WhisperKitTranscriber.defaultVariant
+        let language = TranscribeLanguage(rawValue: env["FC_LANG"] ?? "zh") ?? .chinese
+        let transcriber = WhisperKitTranscriber(variant: variant)
+        _ = try await transcriber.transcribe(samples: Array(samples.prefix(16_000)), language: language) { _ in }
+        let start = Date()
+        let segments = try await transcriber.transcribe(samples: samples, language: language) { _ in }
+        let elapsed = Date().timeIntervalSince(start)
+        let text = segments.map(\.text).joined()
+        let reference = script.map(\.1).joined()
+        let cer = Self.characterErrorRate(reference: reference, hypothesis: text)
+        print("EVAL variant=\(variant) lang=\(language.rawValue) audio=\(samples.count / 16_000)s time=\(String(format: "%.1f", elapsed))s CER=\(String(format: "%.1f%%", cer * 100))")
+        print("EVAL text:", segments.map(\.text).joined(separator: " | "))
+        XCTAssertLessThan(cer, 0.15)
+    }
+
+    static func load16k(_ url: URL) throws -> [Float] {
+        let file = try AVAudioFile(forReading: url)
+        let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
+        let converter = AVAudioConverter(from: file.processingFormat, to: format)!
+        let input = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))!
+        try file.read(into: input)
+        let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(Double(file.length) * 16_000 / file.processingFormat.sampleRate) + 1024)!
+        var fed = false
+        _ = converter.convert(to: output, error: nil) { _, status in
+            if fed { status.pointee = .endOfStream; return nil }
+            fed = true
+            status.pointee = .haveData
+            return input
+        }
+        return Array(UnsafeBufferPointer(start: output.floatChannelData![0], count: Int(output.frameLength)))
+    }
+
+    /// 字错率：忽略标点与空白、英文不区分大小写的编辑距离 / 参考长度。
+    static func characterErrorRate(reference: String, hypothesis: String) -> Double {
+        func normalize(_ s: String) -> [Character] {
+            Array(s.lowercased().filter { !$0.isPunctuation && !$0.isWhitespace && !$0.isSymbol })
+        }
+        let r = normalize(reference), h = normalize(hypothesis)
+        guard !r.isEmpty else { return h.isEmpty ? 0 : 1 }
+        var prev = Array(0...h.count)
+        for i in 1...r.count {
+            var cur = [i] + [Int](repeating: 0, count: h.count)
+            for j in stride(from: 1, through: h.count, by: 1) {
+                cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (r[i - 1] == h[j - 1] ? 0 : 1))
+            }
+            prev = cur
+        }
+        return Double(prev[h.count]) / Double(r.count)
+    }
 }

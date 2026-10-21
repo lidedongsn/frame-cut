@@ -479,7 +479,7 @@ final class EditorModel {
 
     // MARK: 字幕识别
 
-    func transcribe() {
+    func transcribe(language: TranscribeLanguage) {
         if case .running = transcribeState { return }
         transcribeState = .running("正在提取音频…", nil)
         let project = store.project
@@ -490,11 +490,11 @@ final class EditorModel {
                     self?.transcribeState = .failed("主轨视频没有声音，无法识别")
                     return
                 }
-                let segments = try await WhisperKitTranscriber.shared.transcribe(samples: samples) { progress in
+                let segments = try await WhisperKitTranscriber.shared.transcribe(samples: samples, language: language) { progress in
                     Task { @MainActor in
                         switch progress {
                         case .downloading(let p): self?.transcribeState = .running("首次使用，正在下载识别模型…", p)
-                        case .loading: self?.transcribeState = .running("正在加载模型…", nil)
+                        case .loading: self?.transcribeState = .running("正在加载模型…（首次加载需要一两分钟）", nil)
                         case .transcribing(let p): self?.transcribeState = .running("正在识别…", p)
                         }
                     }

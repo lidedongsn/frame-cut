@@ -51,7 +51,7 @@ FrameCut 只支持 Apple 芯片（M1 / M2 / M3 / M4），不为兼容 Intel 背�
 ### 小，而且干净
 
 - **安装包 2.3 MB，安装后约 7 MB。** 不内置浏览器内核，不捆绑插件，全部使用系统原生框架。
-- 语音识别模型约 470 MB，**第一次识别字幕时才下载**；不用这个功能就不占空间，用完也可以在字幕页一键删除。
+- 语音识别模型约 600 MB，**第一次识别字幕时才下载**；不用这个功能就不占空间，用完也可以在字幕页一键删除。
 - 内存缓存都有上限，关闭工程或系统内存紧张时会自动释放；语音模型空闲 3 分钟后自动卸载。
 - 工程文件只记录素材的位置，不复制视频，不会悄悄占满硬盘。
 
@@ -78,7 +78,7 @@ iPhone 拍的视频大多是 HDR（杜比视界 / HLG）。FrameCut 能自动识
 | **调色** | 10 款风格滤镜，或导入 .cube LUT；亮度、对比度、高光、阴影、饱和度、自然饱和度、色温、色调；HSL 分色（8 色）；锐化、暗角；复制 / 粘贴调色（⌥⌘C / ⌥⌘V），按住对比原图，保存为自己的预设 |
 | **转场** | 叠化、闪黑、闪白、四向推移、滑入、擦除、放大、模糊，可一键应用到全部片段 |
 | **音频** | 原声音量与静音；背景音乐的位置、裁剪、分割、音量、淡入淡出 |
-| **字幕** | 本地语音识别自动生成，长句自动断行，逐条校对，统一调整样式 |
+| **字幕** | 本地语音识别自动生成（Whisper large-v3 turbo，可选中文 / 英文 / 自动），长句自动断行，逐条校对，统一调整样式 |
 | **导出** | 一键导出，自动推荐与素材匹配的设置；720p / 1080p / 4K，24–60 fps，H.264 / HEVC 硬件编码，无水印 |
 | **工程** | 每 2 秒自动保存，最近项目，素材被移动后可重新定位 |
 
@@ -114,7 +114,7 @@ make help          # 全部命令
 
 ```bash
 make bench                                                                                       # 导出、分阶段、编码器性能
-FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription   # 真实语音识别（会下载约 480MB 模型）
+FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testRealTranscription   # 真实语音识别（会下载约 600MB 模型）
 ```
 
 日志：打开“控制台”App，按子系统 `com.lidedongsn.framecut` 过滤（分类 project / media / export / transcribe / cache）。
@@ -127,7 +127,7 @@ FC_TRANSCRIBE=1 swift test --package-path Packages/FrameCutKit --filter testReal
 | 位置 | 内容 | 清理 |
 |---|---|---|
 | 工程文件 `*.framecut` | 工程数据（只引用素材，不复制） | 删除工程即删除 |
-| `~/Library/Application Support/FrameCut/Models` | 语音识别模型，约 470MB | 字幕页「删除」 |
+| `~/Library/Application Support/FrameCut/Models` | 语音识别模型，约 600MB | 字幕页「删除」 |
 | `~/Library/Application Support/FrameCut/LUTs` | 导入的 LUT | 滤镜页右键删除 |
 | `~/Library/Application Support/FrameCut/GradePresets.json` | 调色预设 | 滤镜页右键删除 |
 | `~/Library/Caches/FrameCut` | 几 KB 的内部文件 | 自动维护 |
