@@ -8,6 +8,18 @@ final class TranscriberTests: XCTestCase {
         XCTAssertEqual(WhisperKitTranscriber.clean(" <|zh|><|0.00|>今天天氣很好<|2.00|> "), "今天天气很好")
     }
 
+    /// 并发分块会随机丢掉整段识别结果；首词置信度门槛会把哭腔、配乐下开头的整个窗口丢掉。
+    func testDecodingOptionsAvoidDroppingWindows() {
+        let options = WhisperKitTranscriber.decodingOptions(language: .chinese)
+        XCTAssertEqual(options.concurrentWorkerCount, 1)
+        XCTAssertNil(options.firstTokenLogProbThreshold)
+        XCTAssertNil(options.promptTokens)
+        XCTAssertEqual(options.language, "zh")
+        XCTAssertFalse(options.detectLanguage)
+        XCTAssertEqual(WhisperKitTranscriber.decodingOptions(language: .auto).language, nil)
+        XCTAssertTrue(WhisperKitTranscriber.decodingOptions(language: .auto).detectLanguage)
+    }
+
     /// 真实识别：需联网下载模型，设置 FC_TRANSCRIBE=1 时运行。
     func testRealTranscription() async throws {
         guard ProcessInfo.processInfo.environment["FC_TRANSCRIBE"] == "1" else { throw XCTSkip("设置 FC_TRANSCRIBE=1 运行") }

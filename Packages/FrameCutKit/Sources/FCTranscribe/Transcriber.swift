@@ -41,15 +41,6 @@ public enum TranscribeLanguage: String, CaseIterable, Sendable {
     }
 
     var code: String? { self == .auto ? nil : rawValue }
-
-    /// 引导模型输出的提示语：中文用简体并带标点。
-    var prompt: String? {
-        switch self {
-        case .chinese: "以下是普通话的句子，使用简体中文和标点符号。"
-        case .english: nil
-        case .auto: nil
-        }
-    }
 }
 
 public protocol Transcriber: Sendable {
@@ -144,12 +135,7 @@ public actor WhisperKitTranscriber: Transcriber {
         progress(.transcribing(0))
 
         let total = Float(samples.count) / 16_000
-        var options = DecodingOptions(
-            verbose: false, task: .transcribe, language: language.code, temperature: 0, usePrefillPrompt: true,
-            detectLanguage: language.code == nil, skipSpecialTokens: true, withoutTimestamps: false, chunkingStrategy: .vad)
-        if let prompt = language.prompt, let tokenizer = pipe.tokenizer {
-            options.promptTokens = tokenizer.encode(text: " " + prompt).filter { $0 < tokenizer.specialTokens.specialTokenBegin }
-        }
+        let options = Self.decodingOptions(language: language)
         let results = try await pipe.transcribe(audioArray: samples, decodeOptions: options, callback: nil) { segments in
             if let end = segments.map(\.end).max(), total > 0 { progress(.transcribing(Double(min(1, end / total)))) }
         }
@@ -159,6 +145,17 @@ public actor WhisperKitTranscriber: Transcriber {
             guard !text.isEmpty, seg.end > seg.start else { return nil }
             return TranscriptSegment(start: Time(seconds: Double(seg.start)), end: Time(seconds: Double(seg.end)), text: text)
         }.flatMap(SubtitleSplitter.split).sorted { $0.start < $1.start }
+    }
+
+    /// 识别参数。
+    /// - 分块串行处理：WhisperKit 并发分块时会随机丢掉整块结果（失败只写调试日志）。
+    /// - 不设首词置信度门槛：哭腔、配乐下开头一词置信度低，会导致整个 30 秒窗口被丢弃。
+    /// - 不加提示语：实测对准确率没有帮助，还会让模型输出孤立的引号后提前结束。
+    static func decodingOptions(language: TranscribeLanguage) -> DecodingOptions {
+        DecodingOptions(
+            verbose: false, task: .transcribe, language: language.code, temperature: 0, usePrefillPrompt: true,
+            detectLanguage: language.code == nil, skipSpecialTokens: true, withoutTimestamps: false,
+            firstTokenLogProbThreshold: nil, concurrentWorkerCount: 1, chunkingStrategy: .vad)
     }
 
     /// 官方源不可达时（如国内网络）依次尝试镜像。

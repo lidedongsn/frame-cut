@@ -25,7 +25,7 @@ let package = Package(
         ]),
         .testTarget(name: "FCCoreTests", dependencies: ["FCCore"]),
         .testTarget(name: "FCEngineTests", dependencies: ["FCCore", "FCMedia", "FCEngine"]),
-        .testTarget(name: "FCTranscribeTests", dependencies: ["FCCore", "FCTranscribe"]),
+        .testTarget(name: "FCTranscribeTests", dependencies: ["FCCore", "FCEngine", "FCTranscribe"]),
     ],
     swiftLanguageModes: [.v5]
 )
