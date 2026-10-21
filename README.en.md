@@ -10,7 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
 </p>
 
-<p align="center"><b>A vlog editor built for Apple silicon Macs</b> · Free · No watermark · Fully on-device · 2.3 MB download<br>
+<p align="center"><b>A vlog editor built for Apple silicon Macs</b> · Free · No watermark · Fully on-device · Under 3 MB download<br>
 <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><b>⬇ Download the latest release</b></a></p>
 
 <p align="center"><a href="README.md">中文</a> · English</p>
@@ -53,7 +53,7 @@ automatically if rendering falls behind, so playback stays smooth.
 
 ### Small and tidy
 
-- **2.3 MB download, about 7 MB installed.** No embedded browser engine, no bundled plug-ins, only native system frameworks.
+- **Under 3 MB to download, under 10 MB installed.** No embedded browser engine, no bundled plug-ins, only native system frameworks.
 - The speech model (about 600 MB) is **downloaded the first time you generate captions**. If you never use
   captions it takes no space, and you can delete it from the Captions panel with one click.
 - Every in-memory cache has a limit and is released when you close a project or the system runs low on memory;

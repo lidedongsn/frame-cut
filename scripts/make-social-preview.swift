@@ -1,5 +1,5 @@
 // 生成仓库分享图（1280×640，GitHub Social preview / README 横幅）。
-// 用法：swift scripts/make-social-preview.swift <图标1024.png> <输出.png>
+// 用法：swift scripts/make-social-preview.swift App/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png docs/images/social-preview.png
 import AppKit
 
 let args = CommandLine.arguments
@@ -29,14 +29,14 @@ text("A vlog editor built for Apple silicon Macs", size: 26, weight: .medium, co
 
 // 卖点标签
 var x: CGFloat = 456
-for label in ["免费 Free", "无水印 No watermark", "本地运行 On-device", "2.3 MB"] {
-    let attr = NSAttributedString(string: label, attributes: [.font: NSFont.systemFont(ofSize: 22, weight: .semibold), .foregroundColor: accent])
-    let w = attr.size().width + 32
-    let pill = NSBezierPath(roundedRect: NSRect(x: x, y: 190, width: w, height: 44), xRadius: 22, yRadius: 22)
+for label in ["免费 Free", "无水印 No watermark", "本地运行 On-device", "开源 Open source"] {
+    let attr = NSAttributedString(string: label, attributes: [.font: NSFont.systemFont(ofSize: 20, weight: .semibold), .foregroundColor: accent])
+    let w = attr.size().width + 28
+    let pill = NSBezierPath(roundedRect: NSRect(x: x, y: 191, width: w, height: 42), xRadius: 21, yRadius: 21)
     accent.withAlphaComponent(0.14).setFill(); pill.fill()
     accent.withAlphaComponent(0.5).setStroke(); pill.lineWidth = 1.5; pill.stroke()
-    attr.draw(at: NSPoint(x: x + 16, y: 200))
-    x += w + 14
+    attr.draw(at: NSPoint(x: x + 14, y: 200))
+    x += w + 10
 }
 text("Media Engine · Metal GPU · Neural Engine · HDR", size: 22, weight: .medium, color: NSColor(white: 0.5, alpha: 1), at: NSPoint(x: 456, y: 130))
 

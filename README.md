@@ -10,7 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
 </p>
 
-<p align="center"><b>为 Apple 芯片 Mac 打造的 vlog 剪辑软件</b> · 免费 · 无水印 · 全部本地运行 · 安装包仅 2.3 MB<br>
+<p align="center"><b>为 Apple 芯片 Mac 打造的 vlog 剪辑软件</b> · 免费 · 无水印 · 全部本地运行 · 安装包不到 3 MB<br>
 <a href="https://github.com/lidedongsn/frame-cut/releases/latest"><b>⬇ 下载最新版</b></a></p>
 
 <p align="center">中文 · <a href="README.en.md">English</a></p>
@@ -50,7 +50,7 @@ FrameCut 只支持 Apple 芯片（M1 及更新的 M 系列芯片），不为兼�
 
 ### 小，而且干净
 
-- **安装包 2.3 MB，安装后约 7 MB。** 不内置浏览器内核，不捆绑插件，全部使用系统原生框架。
+- **安装包不到 3 MB，安装后不到 10 MB。** 不内置浏览器内核，不捆绑插件，全部使用系统原生框架。
 - 语音识别模型约 600 MB，**第一次识别字幕时才下载**；不用这个功能就不占空间，用完也可以在字幕页一键删除。
 - 内存缓存都有上限，关闭工程或系统内存紧张时会自动释放；语音模型空闲 3 分钟后自动卸载。
 - 工程文件只记录素材的位置，不复制视频，不会悄悄占满硬盘。
