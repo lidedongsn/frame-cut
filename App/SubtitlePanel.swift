@@ -44,17 +44,19 @@ struct SubtitlePanel: View {
     @State private var confirmReplace = false
     @State private var showStyle = false
     @AppStorage("subtitle.language") private var language = TranscribeLanguage.chinese.rawValue
+    @AppStorage("subtitle.useOriginal") private var useOriginal = true
+    @AppStorage("subtitle.useMusic") private var useMusic = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Button {
-                    if model.project.subtitles.isEmpty { model.transcribe(language: spoken) } else { confirmReplace = true }
+                    if model.project.subtitles.isEmpty { startTranscribe() } else { confirmReplace = true }
                 } label: {
                     Label("识别字幕", systemImage: "waveform").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PanelButtonStyle(prominent: true))
-                .disabled(model.project.mainTrack.isEmpty || isRunning)
+                .disabled(model.project.mainTrack.isEmpty || isRunning || !hasSource)
                 .help("用本地语音识别为主轨原声生成字幕（免费、离线）")
 
                 Picker("", selection: $language) {
@@ -76,6 +78,18 @@ struct SubtitlePanel: View {
                 .buttonStyle(PanelButtonStyle())
                 .help("在播放头位置添加一条字幕")
             }
+
+            HStack(spacing: 12) {
+                Text("识别").foregroundStyle(Theme.secondary)
+                Toggle("视频原声", isOn: $useOriginal)
+                    .disabled(isRunning)
+                    .help("识别主轨视频里录到的声音")
+                Toggle("音频轨", isOn: $useMusic)
+                    .disabled(!hasMusic || isRunning)
+                    .help(hasMusic ? "识别音频轨里的声音（配乐、旁白录音）" : "时间线上还没有音频轨")
+            }
+            .toggleStyle(.checkbox)
+            .font(.system(size: 11))
 
             statusView
             ModelStorageRow(model: model)
@@ -117,7 +131,7 @@ struct SubtitlePanel: View {
         .padding(10)
         .foregroundStyle(Theme.text)
         .confirmationDialog("替换现有字幕？", isPresented: $confirmReplace) {
-            Button("重新识别并替换", role: .destructive) { model.transcribe(language: spoken) }
+            Button("重新识别并替换", role: .destructive) { startTranscribe() }
             Button("取消", role: .cancel) {}
         } message: {
             Text("识别结果会替换当前的 \(model.project.subtitles.count) 条字幕（可撤销）。")
@@ -125,6 +139,13 @@ struct SubtitlePanel: View {
     }
 
     private var isRunning: Bool { model.transcribeState.isRunning }
+    private var hasMusic: Bool { !model.project.musicTrack.isEmpty }
+    private var music: Bool { useMusic && hasMusic }
+    private var hasSource: Bool { useOriginal || music }
+
+    private func startTranscribe() {
+        model.transcribe(language: spoken, original: useOriginal, music: music)
+    }
     private var spoken: TranscribeLanguage { TranscribeLanguage(rawValue: language) ?? .chinese }
 
     @ViewBuilder

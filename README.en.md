@@ -84,7 +84,7 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 | **Color** | 10 looks or your own .cube LUTs; brightness, contrast, highlights, shadows, saturation, vibrance, temperature, tint; HSL for 8 color ranges; sharpen and vignette; copy/paste grades (⌥⌘C / ⌥⌘V), hold to compare with the original, save your own presets |
 | **Transitions** | Dissolve, dip to black, dip to white, push in four directions, slide, wipe, zoom, blur; apply to all clips at once |
 | **Audio** | Clip volume and mute; background music with position, trim, split, volume and fades |
-| **Captions** | Generated on-device from speech (Whisper large-v3 turbo; Chinese, English or auto-detect), long sentences split into lines automatically, edit line by line, one shared style |
+| **Captions** | Generated on-device from speech (Whisper large-v3 turbo; Chinese, English or auto-detect; from the original audio, the audio track such as a voiceover, or both), long sentences split into lines automatically, edit line by line, one shared style |
 | **Export** | One-click export with settings matched to your footage; 720p / 1080p / 4K, 24–60 fps, H.264 / HEVC hardware encoding, no watermark |
 | **Projects** | Autosave every 2 seconds, recent projects, relink media that has been moved |
 

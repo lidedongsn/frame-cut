@@ -479,15 +479,15 @@ final class EditorModel {
 
     // MARK: 字幕识别
 
-    func transcribe(language: TranscribeLanguage) {
+    func transcribe(language: TranscribeLanguage, original: Bool, music: Bool) {
         if case .running = transcribeState { return }
         transcribeState = .running("正在提取音频…", nil)
         let project = store.project
         Task { [weak self] in
             do {
-                let samples = try await AudioExtractor.mainTrackSamples(project: project)
+                let samples = try await AudioExtractor.samples(project: project, original: original, music: music)
                 guard !samples.isEmpty else {
-                    self?.transcribeState = .failed("主轨视频没有声音，无法识别")
+                    self?.transcribeState = .failed(music ? "所选的声音来源里没有声音，无法识别" : "主轨视频没有声音，无法识别")
                     return
                 }
                 let segments = try await WhisperKitTranscriber.shared.transcribe(samples: samples, language: language) { progress in

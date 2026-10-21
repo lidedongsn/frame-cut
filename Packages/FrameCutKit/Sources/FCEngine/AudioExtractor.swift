@@ -2,13 +2,14 @@ import AVFoundation
 import FCCore
 import Foundation
 
-/// 主轨原声（不含音乐，已应用音量 / 静音 / 变速）→ 16kHz 单声道 Float，时间与时间线一致。
+/// 时间线声音（视频原声和 / 或音频轨，已应用音量 / 静音 / 变速 / 淡入淡出）→ 16kHz 单声道 Float，时间与时间线一致。
 public enum AudioExtractor {
     public static let sampleRate = 16_000
 
-    public static func mainTrackSamples(project: Project) async throws -> [Float] {
-        let built = try await CompositionBuilder.build(project: project, renderSize: CGSize(width: 64, height: 64), includeMusic: false)
-        let tracks = try await built.composition.loadTracks(withMediaType: .audio)
+    /// original：主轨视频原声；music：音频轨（配乐、旁白）。两者都不选或都没有声音时返回空。
+    public static func samples(project: Project, original: Bool = true, music: Bool = false) async throws -> [Float] {
+        let built = try await CompositionBuilder.build(project: project, renderSize: CGSize(width: 64, height: 64), includeMusic: music)
+        let tracks = (original ? built.laneAudioTracks.compactMap { $0 } : []) + (music ? Array(built.musicTracks.values) : [])
         guard !tracks.isEmpty else { return [] }
 
         let reader = try AVAssetReader(asset: built.composition)

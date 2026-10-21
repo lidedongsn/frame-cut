@@ -1,6 +1,7 @@
 import AVFoundation
 import FCCore
 @testable import FCEngine
+import FCMedia
 import XCTest
 
 final class ExporterTests: XCTestCase {
@@ -53,15 +54,33 @@ final class ExporterTests: XCTestCase {
 
     func testAudioExtractorLength() async throws {
         let p = try await Fixtures.project(["landscape_10s.mp4"])
-        let samples = try await AudioExtractor.mainTrackSamples(project: p)
+        let samples = try await AudioExtractor.samples(project: p)
         XCTAssertEqual(Double(samples.count), 160_000, accuracy: 2_000)
         XCTAssertGreaterThan(samples.map(abs).max() ?? 0, 0.1)
     }
 
     func testAudioExtractorSilentForImages() async throws {
         let p = try await Fixtures.project(["photo.jpg"])
-        let samples = try await AudioExtractor.mainTrackSamples(project: p)
+        let samples = try await AudioExtractor.samples(project: p)
         XCTAssertTrue(samples.isEmpty)
+    }
+
+    func testAudioExtractorIncludesMusicWhenAsked() async throws {
+        var p = try await Fixtures.project(["photo.jpg"])
+        let music = try await MediaProbe.probe(url: TestMedia.url("tone_20s.m4a"))
+        p.addAssets([music])
+        XCTAssertNotNil(p.addMusic(assetID: music.id, at: .zero))
+
+        let original = try await AudioExtractor.samples(project: p)
+        XCTAssertTrue(original.isEmpty)
+        let withMusic = try await AudioExtractor.samples(project: p, music: true)
+        XCTAssertGreaterThan(withMusic.map(abs).max() ?? 0, 0.05)
+    }
+
+    func testAudioExtractorCanSkipOriginal() async throws {
+        let p = try await Fixtures.project(["landscape_10s.mp4"])
+        let none = try await AudioExtractor.samples(project: p, original: false)
+        XCTAssertTrue(none.isEmpty)
     }
 }
 
