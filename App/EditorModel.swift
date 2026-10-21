@@ -334,6 +334,7 @@ final class EditorModel {
             return
         }
         store.perform { $0.replaceSubtitles(subs) }
+        if case .subtitle = selection { selection = nil }
         notice = "已导入 \(subs.count) 条字幕。"
     }
 
@@ -511,15 +512,7 @@ final class EditorModel {
     func export(settings: ExportSettings, to url: URL, burnSubtitles: Bool = true, writeSRT: Bool = false) {
         exportState = .running(0)
         var project = store.project
-        if writeSRT, !project.subtitles.isEmpty {
-            let srtURL = url.deletingPathExtension().appendingPathExtension("srt")
-            do {
-                try SRT.encode(project.subtitles).write(to: srtURL, atomically: true, encoding: .utf8)
-            } catch {
-                exportState = .failed("无法写入字幕文件：\(error.localizedDescription)")
-                return
-            }
-        }
+        let srt = writeSRT && !project.subtitles.isEmpty ? SRT.encode(project.subtitles) : nil
         if !burnSubtitles { project.subtitles = [] }
         let started = Date()
         Log.export.info("开始导出 \(settings.shortSide)p \(settings.frameRate)fps \(settings.dynamicRange.rawValue) \(settings.effectiveCodec.rawValue)")
@@ -528,6 +521,18 @@ final class EditorModel {
                 try await Exporter().export(project: project, settings: settings, to: url) { p in
                     Task { @MainActor in
                         if case .running = self?.exportState { self?.exportState = .running(p) }
+                    }
+                }
+                // 视频导出成功后再写字幕文件；已有同名 .srt 时另起名，不覆盖
+                if let srt {
+                    let srtURL = SRT.sidecarURL(for: url)
+                    do {
+                        try srt.write(to: srtURL, atomically: true, encoding: .utf8)
+                        if srtURL.deletingPathExtension().lastPathComponent != url.deletingPathExtension().lastPathComponent {
+                            self?.notice = "已有同名字幕文件，新的字幕保存为「\(srtURL.lastPathComponent)」。"
+                        }
+                    } catch {
+                        self?.errorMessage = "视频已导出，但字幕文件写入失败：\(error.localizedDescription)"
                     }
                 }
                 self?.exportState = .done(url)
@@ -571,15 +576,7 @@ final class EditorModel {
                     }
                 }
                 let subs = segments.map { Subtitle(start: $0.start, end: $0.end, text: $0.text) }
-                self?.store.perform {
-                    // 识别期间如果剪辑过视频，字幕按识别开始时的时间线换算到现在的时间线
-                    var base = project
-                    base.replaceSubtitles(subs)
-                    let edited = TimelineLayout(project: $0) != TimelineLayout(project: base)
-                    $0.replaceSubtitles(edited && $0.subtitlesFollowMain && original ? $0.subtitlesFollowingMain(from: base) : base.subtitles)
-                    // 只来自视频原声的字幕跟随视频剪辑；只来自音频轨（旁白）的不跟随
-                    if original != music { $0.subtitlesFollowMain = original }
-                }
+                self?.store.perform { $0.applyTranscription(subs, recordedOn: project, original: original, music: music) }
                 self?.transcribeState = subs.isEmpty ? .failed("没有识别到语音") : .idle
                 Log.transcribe.info("识别完成：\(subs.count) 条字幕")
             } catch {

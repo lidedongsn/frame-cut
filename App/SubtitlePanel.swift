@@ -83,7 +83,9 @@ struct SubtitlePanel: View {
                     Button("导出 SRT…") { model.exportSRT() }
                         .disabled(model.project.subtitles.isEmpty)
                     Divider()
-                    Toggle("字幕跟随视频剪辑", isOn: model.projectBinding(\.subtitlesFollowMain))
+                    Toggle("字幕跟随视频剪辑", isOn: Binding(
+                        get: { model.project.subtitlesFollowMain },
+                        set: { on in model.store.perform { $0.subtitlesFollowMain = on; $0.subtitlesFollowIsAutomatic = false } }))
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -201,7 +203,10 @@ struct SubtitleContextMenu: View {
     let sub: Subtitle
 
     private var isLast: Bool { model.project.subtitles.last?.id == sub.id }
-    private var playheadInside: Bool { sub.start < model.playhead && model.playhead < sub.end }
+    /// 与 splitSubtitle 的门槛一致：两边都至少留 minClipDuration。
+    private var playheadInside: Bool {
+        model.playhead - sub.start >= EditLimits.minClipDuration && sub.end - model.playhead >= EditLimits.minClipDuration
+    }
 
     var body: some View {
         Button("在播放头处分割") {

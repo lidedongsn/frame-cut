@@ -89,6 +89,47 @@ final class SubtitleFollowTests: XCTestCase {
         XCTAssertEqual(times(s), ["A2-4"])
     }
 
+    func testSubtitlesReplacedMidDragAreKept() {
+        let s = store()
+        let c = s.project.mainTrack[0]
+        s.beginCoalescing()
+        s.perform { $0.trimMain(id: c.id, sourceIn: t(1), sourceOut: c.sourceOut) }
+        // 拖动中识别完成，整体替换字幕（按当前时间线）
+        s.perform { $0.replaceSubtitles([Subtitle(start: t(20), end: t(21), text: "新")]) }
+        s.perform { $0.trimMain(id: c.id, sourceIn: t(2), sourceOut: c.sourceOut) }
+        s.endCoalescing()
+        XCTAssertEqual(times(s), ["新19-20"])
+    }
+
+    /// 识别期间剪掉了开头：原声识别的字幕要换算到现在的时间线，不管跟随开关是否打开。
+    func testTranscriptionMapsToEditedTimelineEvenWhenFollowOff() {
+        var base = makeProject(clipSeconds: [10, 10])
+        base.subtitlesFollowMain = false
+        base.subtitlesFollowIsAutomatic = false
+        var now = base
+        now.removeMain(id: now.mainTrack[0].id)
+        now.applyTranscription([Subtitle(start: t(12), end: t(14), text: "B")], recordedOn: base, original: true, music: false)
+        XCTAssertEqual(now.subtitles.map { [$0.start, $0.end] }, [[t(2), t(4)]])
+        XCTAssertFalse(now.subtitlesFollowMain, "用户手动关掉的跟随不能被识别改回去")
+    }
+
+    func testTranscriptionSetsFollowAutomatically() {
+        var p = makeProject(clipSeconds: [10])
+        p.applyTranscription([], recordedOn: p, original: false, music: true)
+        XCTAssertFalse(p.subtitlesFollowMain, "只来自音频轨的字幕不跟随视频")
+        p.applyTranscription([], recordedOn: p, original: true, music: false)
+        XCTAssertTrue(p.subtitlesFollowMain)
+        p.applyTranscription([], recordedOn: p, original: true, music: true)
+        XCTAssertTrue(p.subtitlesFollowMain, "两者都有时保持不变")
+    }
+
+    func testOldProjectsDecodeFollowAsAutomatic() throws {
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(Project(name: "x"))) as! [String: Any]
+        json["subtitlesFollowIsAutomatic"] = nil
+        let p = try JSONDecoder().decode(Project.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertTrue(p.subtitlesFollowIsAutomatic)
+    }
+
     func testFollowDisabledLeavesSubtitles() {
         let s = store()
         s.perform { $0.subtitlesFollowMain = false }

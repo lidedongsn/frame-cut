@@ -52,7 +52,7 @@ public protocol Transcriber: Sendable {
 /// 本地 Whisper 识别。首次使用下载模型到 ~/Library/Application Support/FrameCut/Models。
 public actor WhisperKitTranscriber: Transcriber {
     public static let shared = WhisperKitTranscriber()
-    /// large-v3 turbo（压缩到约 630MB）：中文准确率远高于 small，在 M 芯片神经网络引擎上依然很快。
+    /// large-v3 turbo（压缩版，下载约 600MB）：中文准确率远高于 small，在 M 芯片神经网络引擎上依然很快。
     public static let defaultVariant = "openai_whisper-large-v3-v20240930_626MB"
     /// 旧版本用过的模型，换模型后自动删除以免占用磁盘。
     static let legacyVariants = ["openai_whisper-small"]

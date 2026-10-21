@@ -2,6 +2,20 @@ import Foundation
 
 /// 字幕跟随主轨：把字幕的时间线时间换算成「片段 + 源时间」，编辑后再换算回新的时间线时间。
 extension Project {
+    /// 写入识别结果。subs 的时间按开始识别时的工程 base 计算。
+    /// - 来自视频原声且识别期间剪辑过视频：换算到现在的时间线（与跟随开关无关，原声本来就随片段走）。
+    /// - 跟随开关为自动时：只来自原声 → 跟随；只来自音频轨（旁白）→ 不跟随；两者都有 → 保持不变。
+    public mutating func applyTranscription(_ subs: [Subtitle], recordedOn base: Project, original: Bool, music: Bool) {
+        var recorded = base
+        recorded.replaceSubtitles(subs)
+        if original, TimelineLayout(project: self) != TimelineLayout(project: recorded) {
+            subtitles = subtitlesFollowingMain(from: recorded)
+        } else {
+            replaceSubtitles(subs)
+        }
+        if subtitlesFollowIsAutomatic, original != music { subtitlesFollowMain = original }
+    }
+
     /// 主轨编辑（from → self）后重新定位字幕。字幕取自 from，不是 self。
     public func subtitlesFollowingMain(from old: Project) -> [Subtitle] {
         // 原来没有片段时字幕没有可跟随的画面，保持原样
@@ -12,13 +26,13 @@ extension Project {
         let oldIDs = Set(old.mainTrack.map(\.id))
 
         /// 时间线时间 → 新时间线时间。atEnd：取以 t 结束的片段（字幕结束点落在片段交界时归前一个片段）。
-        /// 返回 (时间, 片段 id, 是否被夹到片段边缘)；片段已删除时为 nil。
-        func map(_ t: Time, atEnd: Bool) -> (time: Time, clip: UUID?, clamped: Bool)? {
+        /// 返回 (时间, 片段 id)；源时间被剪掉时夹到片段边缘（整条被剪掉的字幕时长为 0，随后丢弃）；片段已删除时为 nil。
+        func map(_ t: Time, atEnd: Bool) -> (time: Time, clip: UUID?)? {
             guard t < oldLayout.duration || (atEnd && t == oldLayout.duration), !oldLayout.placements.isEmpty else {
-                return (t + endShift, nil, false)
+                return (t + endShift, nil)
             }
             let index = atEnd ? oldLayout.placements.lastIndex { $0.start < t } : oldLayout.clipIndex(at: t)
-            guard let index else { return (t, nil, false) }
+            guard let index else { return (t, nil) }
             let placement = oldLayout.placements[index]
             let clip = old.mainTrack[index]
             let source = clip.sourceIn + (t - placement.start) * clip.speed
@@ -41,7 +55,7 @@ extension Project {
             let newPlacement = newLayout.placements[newIndex]
             let clampedSource = source.clamped(newClip.sourceIn, newClip.sourceOut)
             let time = newPlacement.start + (clampedSource - newClip.sourceIn) / newClip.speed
-            return (time, newClip.id, clampedSource != source)
+            return (time, newClip.id)
         }
 
         func placement(of id: UUID?) -> ClipPlacement? {
@@ -69,7 +83,6 @@ extension Project {
                 newEnd = e.time
                 // 跨两个片段且顺序被调换：只保留开头所在片段那部分
                 if newEnd <= newStart, s.clip != e.clip { newEnd = placement(of: s.clip)?.end ?? newStart }
-                if s.clamped && e.clamped && s.clip == e.clip && newEnd - newStart < EditLimits.minClipDuration { continue }
             }
             guard newEnd - newStart >= EditLimits.minClipDuration else { continue }
             sub.start = Time.max(.zero, newStart)

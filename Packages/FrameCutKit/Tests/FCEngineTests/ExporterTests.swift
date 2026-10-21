@@ -77,6 +77,17 @@ final class ExporterTests: XCTestCase {
         XCTAssertGreaterThan(withMusic.map(abs).max() ?? 0, 0.05)
     }
 
+    func testAudioExtractorMusicOnlyWithVideoThatHasAudio() async throws {
+        var p = try await Fixtures.project(["landscape_10s.mp4"])
+        let music = try await MediaProbe.probe(url: TestMedia.url("tone_20s.m4a"))
+        p.addAssets([music])
+        p.updateMain(id: p.mainTrack[0].id) { $0.muted = true }   // 原声静音也不能影响只取音频轨
+        XCTAssertNotNil(p.addMusic(assetID: music.id, at: .zero))
+        let samples = try await AudioExtractor.samples(project: p, original: false, music: true)
+        XCTAssertEqual(Double(samples.count), 160_000, accuracy: 2_000)
+        XCTAssertGreaterThan(samples.map(abs).max() ?? 0, 0.05)
+    }
+
     func testAudioExtractorCanSkipOriginal() async throws {
         let p = try await Fixtures.project(["landscape_10s.mp4"])
         let none = try await AudioExtractor.samples(project: p, original: false)

@@ -19,42 +19,48 @@ struct SubtitleOverlay: View {
 
     private var style: SubtitleStyle { model.project.subtitleStyle }
 
-    private var subtitle: Subtitle? {
+    /// 当前显示的字幕（重叠时多条），与渲染用同一个排版。
+    private var lines: (subs: [Subtitle], rect: CGRect)? {
         let t = model.playhead
-        return model.project.subtitles.filter { $0.start <= t && t < $0.end }.max { $0.start < $1.start }
+        let subs = model.project.subtitles.filter { $0.start <= t && t < $0.end }.sorted { $0.start < $1.start }
+        let rects = SubtitleRenderer.layout(subs, style: style, canvas: canvas).map(\.rect)
+        guard let first = rects.first else { return nil }
+        return (subs, rects.dropFirst().reduce(first) { $0.union($1) })
     }
 
     var body: some View {
-        if !model.isPlaying, !model.comparingOriginal, let sub = subtitle,
-           let image = SubtitleRenderer.image(text: sub.text, style: style, canvas: canvas) {
-            let rect = style.frame(textSize: image.extent.size, canvas: canvas)
-            let active = hovering || dragStart != nil || resizeStart != nil || model.selection == .subtitle(sub.id)
+        if !model.isPlaying, !model.comparingOriginal, let (subs, rect) = lines, let sub = subs.last {
+            let selected = subs.contains { model.selection == .subtitle($0.id) }
+            let active = hovering || dragStart != nil || resizeStart != nil || selected
             ZStack(alignment: .topLeading) {
                 if snapped {
                     Rectangle().fill(Theme.accent).frame(width: 1, height: canvas.height)
                         .offset(x: canvas.width / 2)
                 }
-                // 平时不画框，鼠标移上去或选中时才显示，不干扰看画面
-                RoundedRectangle(cornerRadius: 3)
-                    .strokeBorder(active ? Theme.accent : Color.clear, lineWidth: 1)
-                    .contentShape(Rectangle())
-                    .frame(width: rect.width + 8, height: rect.height + 8)
-                    .offset(x: rect.minX - 4, y: rect.minY - 4)
-                    .onHover { hovering = $0 }
-                    .onTapGesture { model.selection = .subtitle(sub.id) }
-                    .gesture(moveGesture(sub))
-                    .simultaneousGesture(pinchGesture)
-                    .help("拖动调整位置，拖右下角或双指捏合调整大小（对全部字幕生效）")
-                if active {
+                // 框和右下角手柄放在同一个容器里跟踪悬停，移到手柄上时手柄不会消失
+                ZStack(alignment: .bottomTrailing) {
+                    // 平时不画框，鼠标移上去或选中时才显示，不干扰看画面
+                    RoundedRectangle(cornerRadius: 3)
+                        .strokeBorder(active ? Theme.accent : Color.clear, lineWidth: 1)
+                        .contentShape(Rectangle())
+                        .frame(width: rect.width + 8, height: rect.height + 8)
+                        .onTapGesture { model.selection = .subtitle(sub.id) }
+                        .gesture(moveGesture(sub))
+                        .simultaneousGesture(pinchGesture)
+                        .help("拖动调整位置，拖右下角或双指捏合调整大小（对全部字幕生效）")
                     Circle().fill(Theme.accent)
                         .overlay(Circle().stroke(.white, lineWidth: 1))
                         .frame(width: 10, height: 10)
+                        .opacity(active ? 1 : 0)
                         .contentShape(Rectangle().inset(by: -6))
-                        .offset(x: rect.maxX + 4 - 5, y: rect.maxY + 4 - 5)
+                        .offset(x: 5, y: 5)
                         .gesture(resizeGesture(rect))
                 }
+                .onHover { hovering = $0 }
+                .offset(x: rect.minX - 4, y: rect.minY - 4)
             }
             .frame(width: canvas.width, height: canvas.height, alignment: .topLeading)
+            .onDisappear { hovering = false }
         }
     }
 

@@ -17,7 +17,11 @@ public enum SubtitleRenderer {
     public static func image(text: String, style: SubtitleStyle, canvas: CGSize) -> CIImage? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, canvas.width > 0 else { return nil }
-        let key = "\(trimmed)|\(style.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))"
+        // 位置不影响位图，不进缓存 key：拖动字幕时不会反复栅格化、也不会挤掉播放用的缓存
+        var look = style
+        look.horizontalPosition = 0
+        look.verticalPosition = 0
+        let key = "\(trimmed)|\(look.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))"
         if let hit = lock.withLock({ cache[key] }) { return hit }
 
         let fontSize = max(8, style.fontSize * canvas.height)
@@ -71,6 +75,24 @@ public enum SubtitleRenderer {
         let image = CIImage(cgImage: cg)
         lock.withLock { cache[key] = image }
         return image
+    }
+
+    /// 同一时刻要显示的字幕在画布上的位置（左上角为原点）。多条时按顺序从上到下排开，
+    /// 整组按样式的位置居中；每行各自水平居中于设定位置。预览与导出共用。
+    public static func layout(_ subtitles: [Subtitle], style: SubtitleStyle, canvas: CGSize) -> [(image: CIImage, rect: CGRect)] {
+        let images = subtitles.compactMap { image(text: $0.text, style: style, canvas: canvas) }
+        guard !images.isEmpty else { return [] }
+        let gap = images.count > 1 ? (style.fontSize * canvas.height * 0.2).rounded() : 0
+        let width = images.map(\.extent.width).max() ?? 0
+        let height = images.map(\.extent.height).reduce(0, +) + gap * CGFloat(images.count - 1)
+        let group = style.frame(textSize: CGSize(width: width, height: height), canvas: canvas)
+        var y = group.minY
+        return images.map { img in
+            let w = img.extent.width, h = img.extent.height
+            let x = min(max(0, canvas.width * style.horizontalPosition - w / 2), max(0, canvas.width - w))
+            defer { y += h + gap }
+            return (img, CGRect(x: x, y: y, width: w, height: h))
+        }
     }
 
     static func cgColor(_ c: RGBA) -> CGColor {

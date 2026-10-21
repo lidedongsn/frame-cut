@@ -51,5 +51,15 @@ final class SRTTests: XCTestCase {
     func testEncodeCollapsesBlankLinesInsideText() {
         let subs = [Subtitle(start: .zero, end: Time(seconds: 1), text: "上\n\n下")]
         XCTAssertEqual(SRT.decode(SRT.encode(subs)).first?.text, "上\n下")
+        let spaced = [Subtitle(start: .zero, end: Time(seconds: 1), text: "a\n \n \nb")]
+        XCTAssertEqual(SRT.decode(SRT.encode(spaced)).first?.text, "a\nb")
+    }
+
+    /// 导出视频旁的 .srt 不覆盖已有文件，改用「名称 2.srt」。
+    func testSidecarURLAvoidsExistingFiles() {
+        let video = URL(fileURLWithPath: "/m/foo.mp4")
+        XCTAssertEqual(SRT.sidecarURL(for: video) { _ in false }.lastPathComponent, "foo.srt")
+        let taken: Set<String> = ["foo.srt", "foo 2.srt"]
+        XCTAssertEqual(SRT.sidecarURL(for: video) { taken.contains($0.lastPathComponent) }.lastPathComponent, "foo 3.srt")
     }
 }

@@ -5,7 +5,7 @@ public enum SRT {
     public static func encode(_ subtitles: [Subtitle]) -> String {
         subtitles.sorted { $0.start < $1.start }.enumerated().map { i, sub -> String in
             // 正文里的空行会被当成条目结束，压成单个换行
-            let text = sub.text.replacingOccurrences(of: "\n[ \t]*\n+", with: "\n", options: .regularExpression)
+            let text = sub.text.replacingOccurrences(of: "\n(?:[ \t]*\n)+", with: "\n", options: .regularExpression)
             return "\(i + 1)\n\(timestamp(sub.start)) --> \(timestamp(sub.end))\n\(text)\n"
         }.joined(separator: "\n")
     }
@@ -50,6 +50,19 @@ public enum SRT {
             if end > start, !text.isEmpty { result.append(Subtitle(start: start, end: end, text: text)) }
         }
         return result.sorted { $0.start < $1.start }
+    }
+
+    /// 视频旁边同名的 .srt；已有同名文件时用「名称 2.srt」「名称 3.srt」…，不覆盖。
+    public static func sidecarURL(for video: URL, exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL {
+        let dir = video.deletingLastPathComponent()
+        let name = video.deletingPathExtension().lastPathComponent
+        var candidate = dir.appendingPathComponent(name + ".srt")
+        var n = 2
+        while exists(candidate) {
+            candidate = dir.appendingPathComponent("\(name) \(n).srt")
+            n += 1
+        }
+        return candidate
     }
 
     static func timestamp(_ t: Time) -> String {

@@ -33,13 +33,25 @@ public final class EditorStore {
         onChange?(project)
     }
 
+    /// 连续操作期间字幕换算的起点，以及上一次换算的结果。
+    private var followBase: Project?
+    private var followOutput: [Subtitle]?
+
     /// 主轨时间布局变了且这次没有改字幕时，字幕跟随主轨。
-    /// 连续操作（拖动修剪）期间从操作开始前的状态换算，拖回去时字幕也能回来。
+    /// 连续操作（拖动修剪）期间从同一个起点换算，拖回去时字幕也能回来；
+    /// 期间字幕被别处改过（如识别完成）就以改过的状态为新起点，不覆盖它。
     private func followMain(_ next: inout Project) {
         guard next.subtitlesFollowMain, next.subtitles == project.subtitles else { return }
-        let base = coalescingSnapshot ?? project
+        let base: Project
+        if coalescingDepth > 0 {
+            if followBase == nil || project.subtitles != followOutput { followBase = project }
+            base = followBase ?? project
+        } else {
+            base = project
+        }
         guard base.subtitlesFollowMain, TimelineLayout(project: base) != TimelineLayout(project: next) else { return }
         next.subtitles = next.subtitlesFollowingMain(from: base)
+        followOutput = next.subtitles
     }
 
     /// 开始一段连续操作（如拖动滑块），期间的修改只记一次撤销。
@@ -53,6 +65,8 @@ public final class EditorStore {
         coalescingDepth -= 1
         guard coalescingDepth == 0, let snapshot = coalescingSnapshot else { return }
         coalescingSnapshot = nil
+        followBase = nil
+        followOutput = nil
         if snapshot != project { pushUndo(snapshot) }
     }
 

@@ -39,7 +39,6 @@ public struct Time: Codable, Hashable, Comparable, AdditiveArithmetic, Sendable 
 
     public func clamped(_ lower: Time, _ upper: Time) -> Time { Time.max(lower, Time.min(upper, self)) }
 
-    /// 形如 01:23.45 的显示文本。
     /// 时:分:秒.百分秒，如 00:01:05.30。先取整到百分秒再拆分，不会出现 60 秒。
     public var displayString: String {
         let cs = Int((Swift.max(0, seconds) * 100).rounded())
