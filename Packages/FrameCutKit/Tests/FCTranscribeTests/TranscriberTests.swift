@@ -137,6 +137,7 @@ final class ModelStorageTests: XCTestCase {
         var samples: [Float] = []
         for (i, (rate, line)) in script.enumerated() {
             let aiff = dir.appendingPathComponent("fc-eval-\(i).aiff")
+            defer { try? FileManager.default.removeItem(at: aiff) }
             let p = Process()
             p.executableURL = URL(fileURLWithPath: "/usr/bin/say")
             p.arguments = ["-v", "Tingting", "-r", "\(rate)", "-o", aiff.path, line]
