@@ -55,4 +55,22 @@ final class ProjectFileTests: XCTestCase {
         try FileManager.default.removeItem(at: b)
         XCTAssertEqual(recent.list().map(\.lastPathComponent), ["a.framecut"])
     }
+
+    func testRecentProjectsRemoveAndClearKeepFiles() throws {
+        let defaults = UserDefaults(suiteName: "fc-test-\(UUID().uuidString)")!
+        let recent = RecentProjects(defaults: defaults)
+        let a = dir.appendingPathComponent("a.framecut")
+        let b = dir.appendingPathComponent("b.framecut")
+        try ProjectFile.write(Project(name: "a"), to: a)
+        try ProjectFile.write(Project(name: "b"), to: b)
+        recent.add(a)
+        recent.add(b)
+        recent.remove(b)
+        XCTAssertEqual(recent.list().map(\.lastPathComponent), ["a.framecut"])
+        recent.clear()
+        XCTAssertEqual(recent.list(), [])
+        // 只清记录，不动工程文件
+        XCTAssertTrue(FileManager.default.fileExists(atPath: a.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: b.path))
+    }
 }

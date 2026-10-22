@@ -68,4 +68,9 @@ public struct RecentProjects {
         paths.removeAll { $0 == url.path }
         defaults.set(paths, forKey: RecentProjects.key)
     }
+
+    /// 清空记录（不删除工程文件）。
+    public func clear() {
+        defaults.removeObject(forKey: RecentProjects.key)
+    }
 }

@@ -59,6 +59,17 @@ final class AppModel {
         }
     }
 
+    /// 从最近项目里移除（工程文件不动）。
+    func removeRecent(_ url: URL) {
+        RecentProjects().remove(url)
+        recent = RecentProjects().list()
+    }
+
+    func clearRecent() {
+        RecentProjects().clear()
+        recent = []
+    }
+
     func closeProject() {
         editor?.close()
         editor = nil

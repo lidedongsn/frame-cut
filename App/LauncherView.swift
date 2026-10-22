@@ -4,6 +4,7 @@ import SwiftUI
 /// 启动页：新建 / 打开 / 最近项目。
 struct LauncherView: View {
     @Environment(AppModel.self) private var app
+    @State private var confirmClear = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -38,9 +39,19 @@ struct LauncherView: View {
             Divider().overlay(Theme.border)
 
             VStack(alignment: .leading, spacing: 14) {
-                Text("最近项目")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.secondary)
+                HStack {
+                    Text("最近项目")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.secondary)
+                    Spacer()
+                    if !app.recent.isEmpty {
+                        Button("清空") { confirmClear = true }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.tertiary)
+                            .help("清空最近项目记录，不会删除工程文件")
+                    }
+                }
                 if app.recent.isEmpty {
                     Spacer()
                     Text("还没有项目，点击「开始创作」新建一个")
@@ -52,6 +63,12 @@ struct LauncherView: View {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 16)], spacing: 16) {
                             ForEach(app.recent, id: \.self) { url in
                                 RecentCard(url: url) { app.open(url: url) }
+                                    .contextMenu {
+                                        Button("打开") { app.open(url: url) }
+                                        Button("在访达中显示") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                                        Divider()
+                                        Button("从最近项目中移除") { app.removeRecent(url) }
+                                    }
                             }
                         }
                     }
@@ -60,6 +77,12 @@ struct LauncherView: View {
             .padding(40)
             .padding(.top, 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .confirmationDialog("清空最近项目？", isPresented: $confirmClear) {
+            Button("清空", role: .destructive) { app.clearRecent() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("只清除列表记录，工程文件不会被删除。")
         }
     }
 }
