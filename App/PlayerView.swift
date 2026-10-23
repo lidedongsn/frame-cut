@@ -39,6 +39,7 @@ struct PlayerPanel: View {
                         .overlay {
                             GeometryReader { g in
                                 SubtitleOverlay(model: model, canvas: g.size)
+                                TextOverlay(model: model, canvas: g.size)
                             }
                             .coordinateSpace(name: "subtitleCanvas")
                         }

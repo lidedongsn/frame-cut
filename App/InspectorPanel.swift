@@ -18,6 +18,8 @@ struct InspectorPanel: View {
                     TransitionInspector(model: model, id: id)
                 case .subtitle(let id) where model.project.subtitle(id: id) != nil:
                     SubtitleInspector(model: model, id: id)
+                case .text(let id) where model.project.text(id: id) != nil:
+                    TextInspector(model: model, id: id)
                 default:
                     ProjectInspector(model: model)
                 }
@@ -30,7 +32,7 @@ struct InspectorPanel: View {
     }
 }
 
-private struct InspectorHeader: View {
+struct InspectorHeader: View {
     let title: String
     let icon: String
 

@@ -77,6 +77,10 @@ final class FrameRenderer: @unchecked Sendable {
         } else {
             frame = layers.last ?? black
         }
+        // 文字在下，字幕在上（字幕总是要看得清）
+        for clip in instruction.scene.activeTexts(at: time) {
+            if let text = TextRenderer.render(clip, at: time, canvas: canvas) { frame = text.composited(over: frame) }
+        }
         for line in SubtitleRenderer.layout(instruction.scene.activeSubtitles(at: time), style: instruction.scene.style, canvas: canvas) {
             // Core Image 原点在左下
             let y = canvas.height - line.rect.maxY

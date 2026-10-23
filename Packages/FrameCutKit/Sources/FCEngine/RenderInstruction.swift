@@ -57,14 +57,21 @@ struct LayerSpec {
     var isHDR: Bool = false
 }
 
-/// 所有指令共享的场景信息（字幕等）。
+/// 所有指令共享的场景信息（字幕、文字）。
 final class RenderScene {
     let subtitles: [Subtitle]
     let style: SubtitleStyle
+    let texts: [TextClip]
 
-    init(subtitles: [Subtitle], style: SubtitleStyle) {
+    init(subtitles: [Subtitle], style: SubtitleStyle, texts: [TextClip] = []) {
         self.subtitles = subtitles
         self.style = style
+        self.texts = texts
+    }
+
+    /// 当前显示的文字，按开始时间排序（后开始的画在上面）。
+    func activeTexts(at t: Time) -> [TextClip] {
+        texts.filter { $0.start <= t && t < $0.end }.sorted { $0.start < $1.start }
     }
 
     /// 当前显示的字幕，按开始时间排序（时间重叠的会上下排开显示）。

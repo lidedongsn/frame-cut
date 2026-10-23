@@ -33,25 +33,46 @@ public final class EditorStore {
         onChange?(project)
     }
 
-    /// 连续操作期间字幕换算的起点，以及上一次换算的结果。
-    private var followBase: Project?
-    private var followOutput: [Subtitle]?
+    /// 连续操作期间换算的起点，以及上一次换算的结果。字幕、文字各记各的。
+    private struct FollowState<Items: Equatable> {
+        var base: Project?
+        var output: Items?
+    }
 
-    /// 主轨时间布局变了且这次没有改字幕时，字幕跟随主轨。
-    /// 连续操作（拖动修剪）期间从同一个起点换算，拖回去时字幕也能回来；
-    /// 期间字幕被别处改过（如识别完成）就以改过的状态为新起点，不覆盖它。
+    private var subtitleFollow = FollowState<[Subtitle]>()
+    private var textFollow = FollowState<[TextClip]>()
+
+    /// 主轨时间布局变了时，这次没有改动的字幕（开启跟随时）和文字跟随主轨。
+    /// 连续操作（拖动修剪）期间从同一个起点换算，拖回原处时也回到原处；
+    /// 期间被别处改过（如识别完成）就以改过的状态为新起点，不覆盖它。
     private func followMain(_ next: inout Project) {
-        guard next.subtitlesFollowMain, next.subtitles == project.subtitles else { return }
-        let base: Project
-        if coalescingDepth > 0 {
-            if followBase == nil || project.subtitles != followOutput { followBase = project }
-            base = followBase ?? project
-        } else {
-            base = project
+        if next.subtitlesFollowMain, next.subtitles == project.subtitles {
+            let base = followBase(&subtitleFollow, current: project.subtitles)
+            if base.subtitlesFollowMain, let changed = layoutChanged(from: base, to: next) {
+                next.subtitles = changed ? next.subtitlesFollowingMain(from: base) : base.subtitles
+                subtitleFollow.output = next.subtitles
+            }
         }
-        guard base.subtitlesFollowMain, TimelineLayout(project: base) != TimelineLayout(project: next) else { return }
-        next.subtitles = next.subtitlesFollowingMain(from: base)
-        followOutput = next.subtitles
+        if next.texts == project.texts {
+            let base = followBase(&textFollow, current: project.texts)
+            if let changed = layoutChanged(from: base, to: next) {
+                next.texts = changed ? next.textsFollowingMain(from: base) : base.texts
+                textFollow.output = next.texts
+            }
+        }
+    }
+
+    /// 当前值不是上次换算的结果（被别处改过）时，以当前工程为新起点。
+    private func followBase<Items>(_ state: inout FollowState<Items>, current: Items) -> Project {
+        guard coalescingDepth > 0 else { return project }
+        if state.base == nil || state.output != current { state.base = project }
+        return state.base ?? project
+    }
+
+    /// 时间布局是否变了；nil 表示不需要换算（非连续操作且布局没变）。
+    private func layoutChanged(from base: Project, to next: Project) -> Bool? {
+        let changed = TimelineLayout(project: base) != TimelineLayout(project: next)
+        return changed || coalescingDepth > 0 ? changed : nil
     }
 
     /// 开始一段连续操作（如拖动滑块），期间的修改只记一次撤销。
@@ -65,8 +86,8 @@ public final class EditorStore {
         coalescingDepth -= 1
         guard coalescingDepth == 0, let snapshot = coalescingSnapshot else { return }
         coalescingSnapshot = nil
-        followBase = nil
-        followOutput = nil
+        subtitleFollow = FollowState()
+        textFollow = FollowState()
         if snapshot != project { pushUndo(snapshot) }
     }
 

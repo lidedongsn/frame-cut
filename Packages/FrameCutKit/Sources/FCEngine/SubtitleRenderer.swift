@@ -14,14 +14,16 @@ public enum SubtitleRenderer {
         lock.withLock { cache.removeAll() }
     }
 
-    public static func image(text: String, style: SubtitleStyle, canvas: CGSize) -> CIImage? {
+    /// visibleCharacters：只画前几个字（打字机效果），其余透明但仍占位，版面与完整文字一致。
+    public static func image(text: String, style: SubtitleStyle, canvas: CGSize, visibleCharacters: Int? = nil) -> CIImage? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, canvas.width > 0 else { return nil }
         // 位置不影响位图，不进缓存 key：拖动字幕时不会反复栅格化、也不会挤掉播放用的缓存
         var look = style
         look.horizontalPosition = 0
         look.verticalPosition = 0
-        let key = "\(trimmed)|\(look.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))"
+        let visible = visibleCharacters.map { min(max(0, $0), trimmed.count) }
+        let key = "\(trimmed)|\(look.hashValue)|\(Int(canvas.width))x\(Int(canvas.height))|\(visible ?? -1)"
         if let hit = lock.withLock({ cache[key] }) { return hit }
 
         let fontSize = max(8, style.fontSize * canvas.height)
@@ -37,7 +39,13 @@ public enum SubtitleRenderer {
                 attrs[.strokeColor] = cgColor(color)
                 attrs[.strokeWidth] = stroke
             }
-            return NSAttributedString(string: trimmed, attributes: attrs)
+            let string = NSMutableAttributedString(string: trimmed, attributes: attrs)
+            if let visible, visible < trimmed.count {
+                let hidden = NSRange(trimmed.index(trimmed.startIndex, offsetBy: visible)..., in: trimmed)
+                string.addAttribute(.foregroundColor, value: cgColor(.clear), range: hidden)
+                if stroke != nil { string.addAttribute(.strokeColor, value: cgColor(.clear), range: hidden) }
+            }
+            return string
         }
 
         let fill = attributed(color: style.textColor, stroke: nil)

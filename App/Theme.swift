@@ -15,6 +15,7 @@ enum Theme {
     static let videoClip = Color(red: 0.17, green: 0.30, blue: 0.40)
     static let musicClip = Color(red: 0.14, green: 0.34, blue: 0.27)
     static let subtitleClip = Color(red: 0.40, green: 0.29, blue: 0.14)
+    static let textClip = Color(red: 0.36, green: 0.22, blue: 0.42)
     static let playhead = Color(red: 1.0, green: 0.85, blue: 0.25)
 
     static let corner: CGFloat = 6

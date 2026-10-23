@@ -20,6 +20,29 @@ extension Project {
     public func subtitlesFollowingMain(from old: Project) -> [Subtitle] {
         // 原来没有片段时字幕没有可跟随的画面，保持原样
         guard !old.mainTrack.isEmpty else { return old.subtitles }
+        let ranges = rangesFollowingMain(from: old, old.subtitles.map { ($0.start, $0.end) })
+        return zip(old.subtitles, ranges).compactMap { sub, range in
+            guard let range else { return nil }
+            var sub = sub
+            (sub.start, sub.end) = range
+            return sub
+        }.sorted { $0.start < $1.start }
+    }
+
+    /// 主轨编辑（from → self）后重新定位文字。文字总是跟随画面（地点、章节标注都属于它下面的片段）。
+    public func textsFollowingMain(from old: Project) -> [TextClip] {
+        guard !old.mainTrack.isEmpty else { return old.texts }
+        let ranges = rangesFollowingMain(from: old, old.texts.map { ($0.start, $0.end) })
+        return zip(old.texts, ranges).compactMap { clip, range in
+            guard let range else { return nil }
+            var clip = clip
+            (clip.start, clip.end) = range
+            return clip
+        }.sorted { $0.start < $1.start }
+    }
+
+    /// 把 old 时间线上的时间段换算到 self 的时间线；所在画面被删掉或剪掉时为 nil。
+    private func rangesFollowingMain(from old: Project, _ ranges: [(start: Time, end: Time)]) -> [(start: Time, end: Time)?] {
         let oldLayout = TimelineLayout(project: old)
         let newLayout = TimelineLayout(project: self)
         let endShift = newLayout.duration - oldLayout.duration
@@ -63,15 +86,14 @@ extension Project {
             return newLayout.placements[i]
         }
 
-        var result: [Subtitle] = []
-        for var sub in old.subtitles {
-            let start = map(sub.start, atEnd: false)
-            let end = map(sub.end, atEnd: true)
+        return ranges.map { range -> (start: Time, end: Time)? in
+            let start = map(range.start, atEnd: false)
+            let end = map(range.end, atEnd: true)
             var newStart: Time
             var newEnd: Time
             switch (start, end) {
             case (nil, nil):
-                continue
+                return nil
             case let (s?, nil):
                 newStart = s.time
                 newEnd = placement(of: s.clip)?.end ?? s.time
@@ -84,11 +106,8 @@ extension Project {
                 // 跨两个片段且顺序被调换：只保留开头所在片段那部分
                 if newEnd <= newStart, s.clip != e.clip { newEnd = placement(of: s.clip)?.end ?? newStart }
             }
-            guard newEnd - newStart >= EditLimits.minClipDuration else { continue }
-            sub.start = Time.max(.zero, newStart)
-            sub.end = newEnd
-            result.append(sub)
+            guard newEnd - newStart >= EditLimits.minClipDuration else { return nil }
+            return (Time.max(.zero, newStart), newEnd)
         }
-        return result.sorted { $0.start < $1.start }
     }
 }

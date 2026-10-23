@@ -8,16 +8,26 @@ private enum TL {
     static let main: CGFloat = 70
     static let music: CGFloat = 44
     static let subtitle: CGFloat = 30
+    static let text: CGFloat = 24
+    static let laneGap: CGFloat = 2
     static let gap: CGFloat = 8
     static let handle: CGFloat = 8
-
-    static var mainY: CGFloat { ruler + gap }
-    static var musicY: CGFloat { mainY + main + gap }
-    static var subtitleY: CGFloat { musicY + music + gap }
-    static var height: CGFloat { subtitleY + subtitle + gap }
 }
 
-/// 时间线：时间尺、主视频轨、音乐轨、字幕轨、播放头。
+/// 各轨道的纵向位置。文字轨在主轨上方，时间重叠的文字分多行。
+private struct Rows {
+    let textLanes: Int
+
+    var textY: CGFloat { TL.ruler + TL.gap }
+    func laneY(_ lane: Int) -> CGFloat { textY + CGFloat(lane) * (TL.text + TL.laneGap) }
+    var textHeight: CGFloat { CGFloat(textLanes) * (TL.text + TL.laneGap) - TL.laneGap }
+    var mainY: CGFloat { textY + textHeight + TL.gap }
+    var musicY: CGFloat { mainY + TL.main + TL.gap }
+    var subtitleY: CGFloat { musicY + TL.music + TL.gap }
+    var height: CGFloat { subtitleY + TL.subtitle + TL.gap }
+}
+
+/// 时间线：时间尺、文字轨、主视频轨、音乐轨、字幕轨、播放头。
 struct TimelineView: View {
     @Bindable var model: EditorModel
     @State private var scrollX: CGFloat = 0
@@ -27,7 +37,11 @@ struct TimelineView: View {
     private func x(_ t: Time) -> CGFloat { TL.leading + CGFloat(t.seconds) * pps }
     private func time(_ x: CGFloat) -> Time { Time(seconds: max(0, Double((x - TL.leading) / pps))) }
 
+    private var textLanes: [UUID: Int] { TextClip.lanes(model.project.texts) }
+    private var rows: Rows { Rows(textLanes: max(1, TextClip.laneCount(model.project.texts))) }
+
     var body: some View {
+        let rows = rows
         GeometryReader { geo in
             ScrollViewReader { proxy in
                 ScrollView([.horizontal, .vertical]) {
@@ -35,12 +49,12 @@ struct TimelineView: View {
                     ZStack(alignment: .topLeading) {
                         // 捏合 / ⌘⌥+滚轮缩放，并保持锚点位置
                         ZoomEventCatcher(model: model, pointsPerSecond: model.pointsPerSecond)
-                            .frame(width: width, height: max(geo.size.height, TL.height))
+                            .frame(width: width, height: max(geo.size.height, rows.height))
                             .allowsHitTesting(false)
 
                         // 背景：点击 / 拖动定位播放头，取消选择
                         Color.clear
-                            .frame(width: width, height: max(geo.size.height, TL.height))
+                            .frame(width: width, height: max(geo.size.height, rows.height))
                             .contentShape(Rectangle())
                             .gesture(DragGesture(minimumDistance: 0)
                                 .onChanged { v in
@@ -52,15 +66,17 @@ struct TimelineView: View {
                             .frame(width: width, height: TL.ruler)
                             .gesture(DragGesture(minimumDistance: 0).onChanged { model.seek(to: time($0.location.x)) })
 
-                        trackBackground(y: TL.mainY, height: TL.main, width: width)
-                        trackBackground(y: TL.musicY, height: TL.music, width: width)
-                        trackBackground(y: TL.subtitleY, height: TL.subtitle, width: width)
+                        trackBackground(y: rows.textY, height: rows.textHeight, width: width)
+                        trackBackground(y: rows.mainY, height: TL.main, width: width)
+                        trackBackground(y: rows.musicY, height: TL.music, width: width)
+                        trackBackground(y: rows.subtitleY, height: TL.subtitle, width: width)
 
-                        mainTrack(width: width)
-                        musicTrack
-                        subtitleTrack
+                        textTrack(rows)
+                        mainTrack(width: width, y: rows.mainY)
+                        musicTrack(y: rows.musicY)
+                        subtitleTrack(y: rows.subtitleY)
 
-                        PlayheadView(height: max(geo.size.height, TL.height))
+                        PlayheadView(height: max(geo.size.height, rows.height))
                             .offset(x: x(model.playhead) - 6)
                             .gesture(DragGesture().onChanged { v in
                                 model.seek(to: time(v.location.x))
@@ -70,7 +86,7 @@ struct TimelineView: View {
                             .offset(x: x(model.playhead))
                             .id("playhead")
                     }
-                    .frame(width: width, height: max(geo.size.height, TL.height), alignment: .topLeading)
+                    .frame(width: width, height: max(geo.size.height, rows.height), alignment: .topLeading)
                     .background(GeometryReader { g in
                         Color.clear.preference(key: ScrollXKey.self, value: -g.frame(in: .named("timeline")).minX)
                     })
@@ -104,42 +120,50 @@ struct TimelineView: View {
 
     // MARK: 主轨
 
+    private func textTrack(_ rows: Rows) -> some View {
+        let lanes = textLanes
+        return ForEach(model.project.texts) { clip in
+            TextClipView(model: model, clip: clip, pps: pps)
+                .offset(x: x(clip.start), y: rows.laneY(lanes[clip.id] ?? 0))
+        }
+    }
+
     @ViewBuilder
-    private func mainTrack(width: CGFloat) -> some View {
+    private func mainTrack(width: CGFloat, y mainY: CGFloat) -> some View {
         if model.project.mainTrack.isEmpty {
             Text("把素材拖到这里，或在左侧素材库双击添加")
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.tertiary)
                 .frame(width: min(width, 600), height: TL.main)
                 .background(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4])).foregroundStyle(Theme.tertiary))
-                .offset(x: TL.leading, y: TL.mainY)
+                .offset(x: TL.leading, y: mainY)
                 .allowsHitTesting(false)
         }
         ForEach(model.layout.placements, id: \.clipID) { placement in
             if let clip = model.project.mainClip(id: placement.clipID), let asset = model.project.asset(id: clip.assetID) {
                 MainClipView(model: model, clip: clip, asset: asset, placement: placement, pps: pps)
-                    .offset(x: x(placement.start), y: TL.mainY)
+                    .offset(x: x(placement.start), y: mainY)
             }
         }
         ForEach(model.layout.placements.dropFirst(), id: \.clipID) { placement in
             TransitionMarker(model: model, placement: placement)
-                .offset(x: x(placement.start + (placement.transitionIn?.duration ?? .zero) / 2) - 10, y: TL.mainY + TL.main / 2 - 10)
+                .offset(x: x(placement.start + (placement.transitionIn?.duration ?? .zero) / 2) - 10, y: mainY + TL.main / 2 - 10)
         }
     }
 
-    private var musicTrack: some View {
+    private func musicTrack(y: CGFloat) -> some View {
         ForEach(model.project.musicTrack) { clip in
             if let asset = model.project.asset(id: clip.assetID) {
                 MusicClipView(model: model, clip: clip, asset: asset, pps: pps)
-                    .offset(x: x(clip.start), y: TL.musicY)
+                    .offset(x: x(clip.start), y: y)
             }
         }
     }
 
-    private var subtitleTrack: some View {
+    private func subtitleTrack(y: CGFloat) -> some View {
         ForEach(model.project.subtitles) { sub in
             SubtitleClipView(model: model, sub: sub, pps: pps)
-                .offset(x: x(sub.start), y: TL.subtitleY)
+                .offset(x: x(sub.start), y: y)
         }
     }
 
@@ -658,6 +682,78 @@ private struct SubtitleClipView: View {
             let delta = Time(seconds: Double(dx / pps))
             model.store.perform { p in
                 p.updateSubtitle(id: sub.id) { c in
+                    if leading { c.start = Time.min(s.end - EditLimits.minClipDuration, s.start + delta) } else { c.end = s.end + delta }
+                }
+            }
+        } onEnd: { end() }
+    }
+}
+
+// MARK: - 文字片段
+
+private struct TextClipView: View {
+    @Bindable var model: EditorModel
+    let clip: TextClip
+    let pps: CGFloat
+
+    @State private var dragStart: TextClip?
+
+    private var selected: Bool { model.selection == .text(clip.id) }
+    private var width: CGFloat { max(4, CGFloat(clip.duration.seconds) * pps) }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "textformat").font(.system(size: 9))
+            Text(clip.text).font(.system(size: 10)).lineLimit(1)
+        }
+        .padding(.horizontal, 5)
+        .frame(width: width, height: TL.text, alignment: .leading)
+        .foregroundStyle(.white)
+        .background(Theme.textClip)
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(selected ? Color.white : Theme.border, lineWidth: selected ? 2 : 1))
+        .overlay(alignment: .leading) { if selected { handle(leading: true) } }
+        .overlay(alignment: .trailing) { if selected { handle(leading: false) } }
+        .zIndex(selected ? 5 : 0)
+        .onTapGesture {
+            model.selection = .text(clip.id)
+            if !(clip.start <= model.playhead && model.playhead < clip.end) { model.seek(to: clip.start + clip.duration / 2) }
+        }
+        .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("timeline"))
+            .onChanged { v in
+                begin()
+                guard let s = dragStart else { return }
+                let d = Time.max(Time.zero - s.start, Time(seconds: Double(v.translation.width / pps)))
+                model.store.perform { $0.updateText(id: clip.id) { $0.start = s.start + d; $0.end = s.end + d } }
+            }
+            .onEnded { _ in end() })
+        .contextMenu {
+            Button("复制一份") { model.duplicateText(clip.id) }
+            Divider()
+            Button("删除", role: .destructive) { model.removeText(clip.id) }
+        }
+        .help(clip.text)
+    }
+
+    private func begin() {
+        guard dragStart == nil else { return }
+        dragStart = clip
+        model.selection = .text(clip.id)
+        model.store.beginCoalescing()
+    }
+
+    private func end() {
+        dragStart = nil
+        model.store.endCoalescing()
+    }
+
+    private func handle(leading: Bool) -> some View {
+        TrimHandle(leading: leading) { dx in
+            begin()
+            guard let s = dragStart else { return }
+            let delta = Time(seconds: Double(dx / pps))
+            model.store.perform { p in
+                p.updateText(id: clip.id) { c in
                     if leading { c.start = Time.min(s.end - EditLimits.minClipDuration, s.start + delta) } else { c.end = s.end + delta }
                 }
             }

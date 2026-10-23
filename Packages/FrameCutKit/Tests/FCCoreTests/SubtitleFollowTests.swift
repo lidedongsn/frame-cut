@@ -66,6 +66,17 @@ final class SubtitleFollowTests: XCTestCase {
         XCTAssertEqual(times(s), ["A1-3", "B11-13", "C21-23"])
     }
 
+    /// 拖动修剪后又拖回原处：字幕回到原位，不留下中途的换算结果。
+    func testDragTrimExactlyBackRestoresSubtitles() {
+        let s = store()
+        let c = s.project.mainTrack[0]
+        s.beginCoalescing()
+        s.perform { $0.trimMain(id: c.id, sourceIn: t(5), sourceOut: c.sourceOut) }
+        s.perform { $0.trimMain(id: c.id, sourceIn: c.sourceIn, sourceOut: c.sourceOut) }
+        s.endCoalescing()
+        XCTAssertEqual(times(s), ["A2-4", "B12-14", "C22-24"])
+    }
+
     func testAddingTransitionShiftsLaterSubtitles() {
         let s = store()
         s.perform { $0.setTransition(Transition(kind: .dissolve, duration: Time(seconds: 1)), before: $0.mainTrack[1].id) }

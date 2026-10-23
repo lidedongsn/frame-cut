@@ -56,6 +56,8 @@ public struct Project: Codable, Equatable, Sendable {
     public var musicTrack: [AudioClip] = []
     public var subtitles: [Subtitle] = []
     public var subtitleStyle = SubtitleStyle()
+    /// 文字与标题（独立于字幕）。
+    public var texts: [TextClip] = []
     public var colorMode: ColorMode = .sdr
     /// 为 true 时色彩模式跟随素材（有 HDR 素材即 HDR）；用户手动设置后为 false。
     public var colorModeIsAutomatic = true
@@ -481,6 +483,7 @@ extension Project {
         musicTrack = try c.decode([AudioClip].self, forKey: .musicTrack)
         subtitles = try c.decode([Subtitle].self, forKey: .subtitles)
         subtitleStyle = try c.decode(SubtitleStyle.self, forKey: .subtitleStyle)
+        texts = try c.decodeIfPresent([TextClip].self, forKey: .texts) ?? []
         colorMode = try c.decodeIfPresent(ColorMode.self, forKey: .colorMode) ?? .sdr
         colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
         // 旧工程的画幅 / 帧率可能是手动设的

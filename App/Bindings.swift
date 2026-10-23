@@ -24,6 +24,13 @@ extension EditorModel {
         )
     }
 
+    func textBinding<T>(_ id: UUID, _ keyPath: WritableKeyPath<TextClip, T>, default fallback: T) -> Binding<T> {
+        Binding(
+            get: { self.project.text(id: id)?[keyPath: keyPath] ?? fallback },
+            set: { value in self.store.perform { $0.updateText(id: id) { $0[keyPath: keyPath] = value } } }
+        )
+    }
+
     func projectBinding<T>(_ keyPath: WritableKeyPath<Project, T>) -> Binding<T> {
         Binding(
             get: { self.project[keyPath: keyPath] },

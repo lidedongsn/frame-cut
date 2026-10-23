@@ -11,6 +11,7 @@ enum Selection: Equatable {
     case video(UUID)
     case music(UUID)
     case subtitle(UUID)
+    case text(UUID)
     /// 转场，以其后的片段 id 标识。
     case transition(UUID)
 }
@@ -113,6 +114,8 @@ final class EditorModel {
             if project.music(id: id) == nil { selection = nil }
         case .subtitle(let id):
             if project.subtitle(id: id) == nil { selection = nil }
+        case .text(let id):
+            if project.text(id: id) == nil { selection = nil }
         case nil:
             break
         }
@@ -369,10 +372,42 @@ final class EditorModel {
             case .video(let id): p.removeMain(id: id)
             case .music(let id): p.removeMusic(id: id)
             case .subtitle(let id): p.removeSubtitle(id: id)
+            case .text(let id): p.removeText(id: id)
             case .transition(let id): p.setTransition(nil, before: id)
             }
         }
         self.selection = nil
+    }
+
+    // MARK: 文字
+
+    /// 在播放头处添加一段文字并选中（播放头在末尾时往前挪，保证落在画面上）。
+    func addText(_ preset: TextPreset) {
+        var start = playhead
+        if duration > .zero, start >= duration - EditLimits.minClipDuration {
+            start = Time.max(.zero, duration - preset.duration)
+        }
+        let clip = preset.makeClip(at: start)
+        store.perform { $0.addText(clip) }
+        selection = .text(clip.id)
+        if isPlaying { togglePlay() }
+        seek(to: Time.min(duration, start + Time.min(clip.duration / 2, Time(seconds: 1))))
+    }
+
+    func duplicateText(_ id: UUID) {
+        var copy: UUID?
+        store.perform { copy = $0.duplicateText(id: id) }
+        if let copy { selection = .text(copy) }
+    }
+
+    func removeText(_ id: UUID) {
+        store.perform { $0.removeText(id: id) }
+        if selection == .text(id) { selection = nil }
+    }
+
+    var selectedText: TextClip? {
+        if case .text(let id) = selection { return project.text(id: id) }
+        return nil
     }
 
     // MARK: 调色工作流

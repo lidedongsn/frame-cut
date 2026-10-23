@@ -54,7 +54,7 @@ public final class BuiltComposition: @unchecked Sendable {
 
     public func makeVideoComposition(project: Project, renderSize: CGSize, output: DynamicRangeOutput = .sdr) -> AVMutableVideoComposition {
         let layout = TimelineLayout(project: project)
-        let scene = RenderScene(subtitles: project.subtitles, style: project.subtitleStyle)
+        let scene = RenderScene(subtitles: project.subtitles, style: project.subtitleStyle, texts: project.texts)
         let total = Time.max(Time(composition.duration), layout.duration)
 
         var bounds = Set<Time>([.zero, total])

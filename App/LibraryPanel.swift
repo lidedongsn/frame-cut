@@ -6,12 +6,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum LibraryTab: String, CaseIterable {
-    case media, audio, text, transition, filter
+    case media, audio, title, text, transition, filter
 
     var title: String {
         switch self {
         case .media: "素材"
         case .audio: "音频"
+        case .title: "文字"
         case .text: "字幕"
         case .transition: "转场"
         case .filter: "滤镜"
@@ -22,6 +23,7 @@ enum LibraryTab: String, CaseIterable {
         switch self {
         case .media: "photo.on.rectangle"
         case .audio: "music.note"
+        case .title: "textformat"
         case .text: "captions.bubble"
         case .transition: "square.split.diagonal"
         case .filter: "camera.filters"
@@ -60,6 +62,7 @@ struct LibraryPanel: View {
                 switch tab {
                 case .media: MediaTab(model: model)
                 case .audio: AudioTab(model: model)
+                case .title: TextTab(model: model)
                 case .text: SubtitlePanel(model: model)
                 case .transition: TransitionTab(model: model)
                 case .filter: FilterTab(model: model)
