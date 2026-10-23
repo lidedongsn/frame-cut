@@ -2,7 +2,7 @@ import FCCore
 import FCEngine
 import SwiftUI
 
-/// 预览画面上直接调整字幕：拖动移动位置，拖角或双指捏合缩放字号，点击选中。
+/// 预览画面上直接调整字幕：拖动移动位置，拖角或双指捏合缩放字号，点击选中，双击修改文字。
 /// 样式对全部字幕生效；暂停时可操作，播放时不响应。
 struct SubtitleOverlay: View {
     @Bindable var model: EditorModel
@@ -28,8 +28,21 @@ struct SubtitleOverlay: View {
         return (subs, rects.dropFirst().reduce(first) { $0.union($1) })
     }
 
+    /// 正在原地编辑的字幕（须在播放头处显示）。
+    private var editing: Subtitle? {
+        let t = model.playhead
+        return model.project.subtitles.first { $0.id == model.previewEditing && $0.start <= t && t < $0.end }
+    }
+
     var body: some View {
-        if !model.isPlaying, !model.comparingOriginal, let (subs, rect) = lines, let sub = subs.last {
+        if let sub = editing {
+            // 文字删空时没有排版结果，编辑框留在原位置
+            PreviewTextEditor(model: model, text: model.subtitleBinding(sub.id, \.text, default: ""), style: style,
+                              rect: SubtitleRenderer.layout([sub], style: style, canvas: canvas).first?.rect
+                                  ?? style.frame(textSize: .zero, canvas: canvas),
+                              canvas: canvas)
+                .frame(width: canvas.width, height: canvas.height)
+        } else if !model.isPlaying, !model.comparingOriginal, let (subs, rect) = lines, let sub = subs.last {
             let selected = subs.contains { model.selection == .subtitle($0.id) }
             let active = hovering || dragStart != nil || resizeStart != nil || selected
             ZStack(alignment: .topLeading) {
@@ -44,10 +57,11 @@ struct SubtitleOverlay: View {
                         .strokeBorder(active ? Theme.accent : Color.clear, lineWidth: 1)
                         .contentShape(Rectangle())
                         .frame(width: rect.width + 8, height: rect.height + 8)
+                        .onTapGesture(count: 2) { model.beginPreviewEditing(.subtitle(sub.id), id: sub.id) }
                         .onTapGesture { model.selection = .subtitle(sub.id) }
                         .gesture(moveGesture(sub))
                         .simultaneousGesture(pinchGesture)
-                        .help("拖动调整位置，拖右下角或双指捏合调整大小（对全部字幕生效）")
+                        .help("双击修改这条字幕；拖动调整位置，拖右下角或双指捏合调整大小（对全部字幕生效）")
                     Circle().fill(Theme.accent)
                         .overlay(Circle().stroke(.white, lineWidth: 1))
                         .frame(width: 10, height: 10)

@@ -208,7 +208,7 @@ struct TextInspector: View {
 
 // MARK: - 预览：直接调整文字
 
-/// 预览画面上直接调整文字：点击选中，拖动移动（靠近中线自动吸附），拖右下角或双指捏合缩放。暂停时可操作。
+/// 预览画面上直接调整文字：点击选中，双击修改文字，拖动移动（靠近中线自动吸附），拖右下角或双指捏合缩放。暂停时可操作。
 struct TextOverlay: View {
     @Bindable var model: EditorModel
     let canvas: CGSize
@@ -218,7 +218,12 @@ struct TextOverlay: View {
             let t = model.playhead
             ZStack(alignment: .topLeading) {
                 ForEach(model.project.texts.filter { $0.start <= t && t < $0.end }) { clip in
-                    if let rect = TextRenderer.frame(of: clip, canvas: canvas) {
+                    if model.previewEditing == clip.id {
+                        // 文字删空时没有排版结果，编辑框留在原位置
+                        PreviewTextEditor(model: model, text: model.textBinding(clip.id, \.text, default: ""), style: clip.style,
+                                          rect: TextRenderer.frame(of: clip, canvas: canvas) ?? clip.style.frame(textSize: .zero, canvas: canvas),
+                                          canvas: canvas)
+                    } else if let rect = TextRenderer.frame(of: clip, canvas: canvas) {
                         TextBox(model: model, clip: clip, rect: rect, canvas: canvas)
                     }
                 }
@@ -259,10 +264,11 @@ private struct TextBox: View {
                     .strokeBorder(active ? Theme.accent : Color.clear, style: StrokeStyle(lineWidth: 1, dash: selected ? [] : [3]))
                     .contentShape(Rectangle())
                     .frame(width: rect.width + 8, height: rect.height + 8)
+                    .onTapGesture(count: 2) { model.beginPreviewEditing(.text(clip.id), id: clip.id) }
                     .onTapGesture { model.selection = .text(clip.id) }
                     .gesture(moveGesture)
                     .simultaneousGesture(pinchGesture)
-                    .help("拖动调整位置，拖右下角或双指捏合调整大小")
+                    .help("双击修改文字，拖动调整位置，拖右下角或双指捏合调整大小")
                 Circle().fill(Theme.accent)
                     .overlay(Circle().stroke(.white, lineWidth: 1))
                     .frame(width: 10, height: 10)

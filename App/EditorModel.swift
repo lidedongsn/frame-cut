@@ -324,6 +324,26 @@ final class EditorModel {
         if let newID { selection = .music(newID) }
     }
 
+    // MARK: 预览里原地编辑文字
+
+    /// 预览画面上正在原地编辑的文字或字幕的 id。
+    var previewEditing: UUID?
+
+    /// 双击预览里的文字或字幕开始编辑：暂停播放，选中它，整次编辑合成一步撤销。
+    func beginPreviewEditing(_ target: Selection, id: UUID) {
+        endPreviewEditing()
+        if isPlaying { togglePlay() }
+        selection = target
+        store.beginCoalescing()
+        previewEditing = id
+    }
+
+    func endPreviewEditing() {
+        guard previewEditing != nil else { return }
+        previewEditing = nil
+        store.endCoalescing()
+    }
+
     // MARK: 字幕编辑
 
     /// 请求清空全部字幕（弹确认框）。
