@@ -79,15 +79,15 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 
 | | |
 |---|---|
-| **Edit** | Split (⌘B), delete, drag to reorder, drag either end to trim, speed 0.25×–4× (pitch preserved), unlimited undo/redo; pinch to zoom the timeline |
-| **Frame** | 16:9 / 9:16 / 1:1 / 4:3 / 3:4 with scale, position and rotation; new projects match the aspect ratio and frame rate of the first clip |
-| **Color** | 10 looks or your own .cube LUTs; brightness, contrast, highlights, shadows, saturation, vibrance, temperature, tint; HSL for 8 color ranges; sharpen and vignette; copy/paste grades (⌥⌘C / ⌥⌘V), hold to compare with the original, save your own presets |
-| **Transitions** | Dissolve, dip to black, dip to white, push in four directions, slide, wipe, zoom, blur; apply to all clips at once |
-| **Audio** | Clip volume and mute, or detach a clip's audio to edit it on its own; multiple audio tracks so music, voiceover and sound effects play together (overlapping audio goes to a new track automatically, drag up or down to change tracks), with per-track mute and volume; record a voiceover while watching the picture; ducking lowers the music while someone speaks, with speech ranges generated from captions or audio and editable by hand on the timeline; position, trim, split, volume, mute and fades for each audio clip |
-| **Text** | 8 presets for titles, locations, dates, chapters and end cards, added at the playhead in one click; each text has its own font, color, outline, background and position, and can be dragged and resized right on the preview; fade, rise, pop and typewriter animations; moves with your video edits |
-| **Captions** | Generated on-device from speech (Whisper large-v3 turbo; Chinese, English or auto-detect; from the original audio, the audio track such as a voiceover, or both), long sentences split into lines automatically; right-click to split, merge or delete, or clear all; captions follow your video edits; import/export SRT, with burned-in captions optional on export; one shared style |
-| **Export** | One-click export with settings matched to your footage; 720p / 1080p / 4K, 24–60 fps, H.264 / HEVC hardware encoding, no watermark |
-| **Projects** | Autosave every 2 seconds, recent projects, relink media that has been moved |
+| **Edit** | Split (⌘B), drag to reorder and trim, speed 0.25×–4× (pitch preserved), unlimited undo |
+| **Frame** | 5 aspect ratios, scale, position, rotation; matches your footage's aspect ratio and frame rate |
+| **Color** | 10 looks and .cube LUTs, basic adjustments, 8-range HSL, sharpen, vignette; copy/paste grades, hold to compare, save presets |
+| **Transitions** | 11 kinds, apply to all clips in one click |
+| **Audio** | Multitrack music, voiceover and sound effects; record voiceover over the picture; detach a clip's audio; music ducks automatically under speech, adjustable by hand |
+| **Text** | 8 title presets, 4 animations, drag directly on the preview |
+| **Captions** | Generated on-device with Whisper, follow your edits, SRT import/export |
+| **Export** | 720p–4K, 24–60 fps, H.264 / HEVC hardware encoding, no watermark |
+| **Projects** | Autosave; relink media that has been moved |
 
 > The interface is currently in Chinese.
 
@@ -134,7 +134,7 @@ Logs: open the Console app and filter by subsystem `com.lidedongsn.framecut`
 
 | Location | Contents | How to remove |
 |---|---|---|
-| Project files `*.framecut` | Project data (references media, never copies it) | Delete the project |
+| Project files `*.framecut` | Project data and recorded voiceovers (media is referenced, never copied) | Delete the project |
 | `~/Library/Application Support/FrameCut/Models` | Speech model, about 600 MB | **Delete** in the Captions panel |
 | `~/Library/Application Support/FrameCut/LUTs` | Imported LUTs | Right-click in the Filters panel |
 | `~/Library/Application Support/FrameCut/GradePresets.json` | Color presets | Right-click in the Filters panel |
