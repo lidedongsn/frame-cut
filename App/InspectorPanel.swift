@@ -117,11 +117,11 @@ private struct ProjectInspector: View {
         }
         VStack(alignment: .leading, spacing: 6) {
             SectionTitle("统计")
-            Text("片段 \(model.project.mainTrack.count) · 音乐 \(model.project.musicTrack.count) · 字幕 \(model.project.subtitles.count)")
+            Text("片段 \(model.project.mainTrack.count) · 音频 \(model.project.musicTrack.count) · 文字 \(model.project.texts.count) · 字幕 \(model.project.subtitles.count)")
                 .font(.system(size: 12)).foregroundStyle(Theme.secondary)
             Text("总时长 \(model.duration.displayString)").font(.system(size: 12)).foregroundStyle(Theme.secondary)
         }
-        Text("提示：在时间线上点选片段、音乐、字幕或转场，可在这里调整它们的属性。")
+        Text("提示：在时间线上点选片段、音频、文字、字幕或转场，可在这里调整它们的属性。")
             .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
     }
 }
@@ -304,12 +304,15 @@ private struct MusicInspector: View {
     let id: UUID
 
     var body: some View {
-        InspectorHeader(title: "音乐", icon: "music.note")
+        InspectorHeader(title: "音频", icon: "music.note")
         if let clip = model.project.music(id: id), let asset = model.project.asset(id: clip.assetID) {
             Text(asset.name).font(.system(size: 11)).foregroundStyle(Theme.tertiary).lineLimit(1)
-            Text("\(clip.start.displayString) – \(clip.end.displayString)").font(.system(size: 11).monospacedDigit()).foregroundStyle(Theme.secondary)
+            Text("音频轨 \(clip.lane + 1) · \(clip.start.displayString) – \(clip.end.displayString)")
+                .font(.system(size: 11).monospacedDigit()).foregroundStyle(Theme.secondary)
         }
         VStack(alignment: .leading, spacing: 10) {
+            Toggle("静音", isOn: model.musicBinding(id, \.muted, default: false))
+                .font(.system(size: 12))
             LabeledSlider(title: "音量", value: model.musicBinding(id, \.volume, default: 1), range: 0...2,
                           format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
             LabeledSlider(title: "淡入", value: model.seconds(model.musicBinding(id, \.fadeIn, default: .zero)), range: 0...5,
@@ -317,7 +320,7 @@ private struct MusicInspector: View {
             LabeledSlider(title: "淡出", value: model.seconds(model.musicBinding(id, \.fadeOut, default: .zero)), range: 0...5,
                           format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
         }
-        Text("在时间线上拖动音乐可调整位置，拖动两端可裁剪；⌘B 在播放头处分割。")
+        Text("在时间线上左右拖动调整位置，上下拖动换到其他音频轨；拖动两端可裁剪，⌘B 在播放头处分割。配乐、旁白、音效可以放在不同的轨上同时播放。")
             .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
     }
 }

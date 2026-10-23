@@ -14,20 +14,23 @@ private enum TL {
     static let handle: CGFloat = 8
 }
 
-/// 各轨道的纵向位置。文字轨在主轨上方，时间重叠的文字分多行。
+/// 各轨道的纵向位置。文字轨在主轨上方，时间重叠的文字分多行；音频轨可以有多条。
 private struct Rows {
     let textLanes: Int
+    let audioLanes: Int
 
     var textY: CGFloat { TL.ruler + TL.gap }
     func laneY(_ lane: Int) -> CGFloat { textY + CGFloat(lane) * (TL.text + TL.laneGap) }
     var textHeight: CGFloat { CGFloat(textLanes) * (TL.text + TL.laneGap) - TL.laneGap }
     var mainY: CGFloat { textY + textHeight + TL.gap }
     var musicY: CGFloat { mainY + TL.main + TL.gap }
-    var subtitleY: CGFloat { musicY + TL.music + TL.gap }
+    func audioLaneY(_ lane: Int) -> CGFloat { musicY + CGFloat(lane) * (TL.music + TL.laneGap) }
+    var musicHeight: CGFloat { CGFloat(audioLanes) * (TL.music + TL.laneGap) - TL.laneGap }
+    var subtitleY: CGFloat { musicY + musicHeight + TL.gap }
     var height: CGFloat { subtitleY + TL.subtitle + TL.gap }
 }
 
-/// 时间线：时间尺、文字轨、主视频轨、音乐轨、字幕轨、播放头。
+/// 时间线：时间尺、文字轨、主视频轨、音频轨（可多条）、字幕轨、播放头。
 struct TimelineView: View {
     @Bindable var model: EditorModel
     @State private var scrollX: CGFloat = 0
@@ -38,7 +41,9 @@ struct TimelineView: View {
     private func time(_ x: CGFloat) -> Time { Time(seconds: max(0, Double((x - TL.leading) / pps))) }
 
     private var textLanes: [UUID: Int] { TextClip.lanes(model.project.texts) }
-    private var rows: Rows { Rows(textLanes: max(1, TextClip.laneCount(model.project.texts))) }
+    private var rows: Rows {
+        Rows(textLanes: max(1, TextClip.laneCount(model.project.texts)), audioLanes: model.project.audioLaneCount)
+    }
 
     var body: some View {
         let rows = rows
@@ -68,12 +73,14 @@ struct TimelineView: View {
 
                         trackBackground(y: rows.textY, height: rows.textHeight, width: width)
                         trackBackground(y: rows.mainY, height: TL.main, width: width)
-                        trackBackground(y: rows.musicY, height: TL.music, width: width)
+                        ForEach(0..<rows.audioLanes, id: \.self) { lane in
+                            trackBackground(y: rows.audioLaneY(lane), height: TL.music, width: width)
+                        }
                         trackBackground(y: rows.subtitleY, height: TL.subtitle, width: width)
 
                         textTrack(rows)
                         mainTrack(width: width, y: rows.mainY)
-                        musicTrack(y: rows.musicY)
+                        musicTrack(rows)
                         subtitleTrack(y: rows.subtitleY)
 
                         PlayheadView(height: max(geo.size.height, rows.height))
@@ -151,11 +158,11 @@ struct TimelineView: View {
         }
     }
 
-    private func musicTrack(y: CGFloat) -> some View {
+    private func musicTrack(_ rows: Rows) -> some View {
         ForEach(model.project.musicTrack) { clip in
             if let asset = model.project.asset(id: clip.assetID) {
-                MusicClipView(model: model, clip: clip, asset: asset, pps: pps)
-                    .offset(x: x(clip.start), y: y)
+                MusicClipView(model: model, clip: clip, asset: asset, pps: pps, laneCount: rows.audioLanes)
+                    .offset(x: x(clip.start), y: rows.audioLaneY(clip.lane))
             }
         }
     }
@@ -534,6 +541,7 @@ private struct MusicClipView: View {
     let clip: AudioClip
     let asset: MediaAsset
     let pps: CGFloat
+    let laneCount: Int
 
     @State private var peaks: [Float] = []
     @State private var dragStart: AudioClip?
@@ -563,6 +571,7 @@ private struct MusicClipView: View {
             HStack(spacing: 4) {
                 Image(systemName: "music.note").font(.system(size: 9))
                 Text(asset.name).font(.system(size: 10)).lineLimit(1)
+                if clip.muted { Image(systemName: "speaker.slash.fill").font(.system(size: 9)) }
             }
             .foregroundStyle(.white)
             .padding(4)
@@ -580,12 +589,17 @@ private struct MusicClipView: View {
                 begin()
                 guard let s = dragStart else { return }
                 let start = s.start + Time(seconds: Double(v.translation.width / pps))
-                model.store.perform { $0.updateMusic(id: clip.id) { $0.start = start } }
+                // 上下拖动换轨；拖到最下面一条轨之下时新建一条
+                let rowHeight = Double(TL.music + TL.laneGap)
+                let lane = min(laneCount, max(0, s.lane + Int((Double(v.translation.height) / rowHeight).rounded())))
+                model.store.perform { $0.updateMusic(id: clip.id) { $0.start = start; $0.lane = lane } }
             }
             .onEnded { _ in end() })
         .task(id: asset.path) { peaks = await WaveformProvider.shared.peaks(url: asset.url) }
         .contextMenu {
             Button("在播放头处分割") { model.selection = .music(clip.id); model.splitAtPlayhead() }
+            Button(clip.muted ? "取消静音" : "静音") { model.store.perform { $0.updateMusic(id: clip.id) { $0.muted.toggle() } } }
+            Divider()
             Button("删除", role: .destructive) { model.store.perform { $0.removeMusic(id: clip.id) } }
         }
     }
@@ -609,6 +623,7 @@ private struct MusicClipView: View {
             let delta = Time(seconds: Double(dx / pps))
             model.store.perform { p in
                 p.updateMusic(id: clip.id) { c in
+                    c.lane = s.lane // 拖回来时回到原来的轨
                     if leading {
                         let d = Time.max(Time.zero - s.sourceIn, Time.max(Time.zero - s.start, delta))
                         c.start = s.start + d

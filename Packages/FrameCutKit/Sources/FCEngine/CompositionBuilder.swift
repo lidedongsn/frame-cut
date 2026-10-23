@@ -135,7 +135,7 @@ public final class BuiltComposition: @unchecked Sendable {
         for clip in project.musicTrack {
             guard let track = musicTracks[clip.id] else { continue }
             let p = AVMutableAudioMixInputParameters(track: track)
-            let v = Float(clip.volume)
+            let v = clip.muted ? 0 : Float(clip.volume)
             if clip.fadeIn > .zero {
                 p.setVolumeRamp(fromStartVolume: 0, toEndVolume: v,
                                 timeRange: CMTimeRange(start: clip.start.cmTime, duration: clip.fadeIn.cmTime))

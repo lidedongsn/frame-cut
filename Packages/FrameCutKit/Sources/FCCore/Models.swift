@@ -375,6 +375,9 @@ public struct AudioClip: Codable, Equatable, Identifiable, Sendable {
     public var volume: Double = 1
     public var fadeIn: Time = .zero
     public var fadeOut: Time = .zero
+    /// 所在音频轨（0 为第一条）。同一条轨上的片段不重叠，由 arrangeAudioLanes 维护。
+    public var lane = 0
+    public var muted = false
 
     public init(id: UUID = UUID(), assetID: UUID, start: Time, sourceIn: Time, sourceOut: Time) {
         self.id = id
@@ -386,6 +389,23 @@ public struct AudioClip: Codable, Equatable, Identifiable, Sendable {
 
     public var duration: Time { sourceOut - sourceIn }
     public var end: Time { start + duration }
+}
+
+extension AudioClip {
+    // 旧工程没有 lane，缺省为第一条轨（打开时再把重叠的分开）
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        assetID = try c.decode(UUID.self, forKey: .assetID)
+        start = try c.decode(Time.self, forKey: .start)
+        sourceIn = try c.decode(Time.self, forKey: .sourceIn)
+        sourceOut = try c.decode(Time.self, forKey: .sourceOut)
+        volume = try c.decodeIfPresent(Double.self, forKey: .volume) ?? 1
+        fadeIn = try c.decodeIfPresent(Time.self, forKey: .fadeIn) ?? .zero
+        fadeOut = try c.decodeIfPresent(Time.self, forKey: .fadeOut) ?? .zero
+        lane = try c.decodeIfPresent(Int.self, forKey: .lane) ?? 0
+        muted = try c.decodeIfPresent(Bool.self, forKey: .muted) ?? false
+    }
 }
 
 // MARK: - 字幕
@@ -490,5 +510,6 @@ extension Project {
         formatIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .formatIsAutomatic) ?? false
         subtitlesFollowMain = try c.decodeIfPresent(Bool.self, forKey: .subtitlesFollowMain) ?? true
         subtitlesFollowIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .subtitlesFollowIsAutomatic) ?? true
+        arrangeAudioLanes()
     }
 }

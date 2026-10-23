@@ -89,6 +89,9 @@ final class DemoProjectMaker: XCTestCase {
         p.assets.append(music)
         let id = p.addMusic(assetID: music.id, at: .zero)!
         p.updateMusic(id: id) { $0.volume = 0.3; $0.fadeIn = Time(seconds: 1); $0.fadeOut = Time(seconds: 2) }
+        // 与配乐重叠的第二段音频（模拟旁白），自动放到第二条音频轨
+        let voice = p.addMusic(assetID: music.id, at: Time(seconds: 4))!
+        p.updateMusic(id: voice) { $0.sourceOut = Time(seconds: 5); $0.volume = 0.8 }
         p.addSubtitle(at: Time(seconds: 0.5), text: "大家好，欢迎来到我的 vlog")
         p.addSubtitle(at: Time(seconds: 3), text: "今天天气很好")
         var title = TextClip.defaultStyle

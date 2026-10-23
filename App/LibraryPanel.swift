@@ -187,12 +187,12 @@ private struct AudioTab: View {
             Button {
                 model.importPanel(addToTimeline: false, audioOnly: true)
             } label: {
-                Label("导入音乐", systemImage: "plus").frame(maxWidth: .infinity)
+                Label("导入音频", systemImage: "plus").frame(maxWidth: .infinity)
             }
             .buttonStyle(PanelButtonStyle(prominent: true))
             if audioAssets.isEmpty {
                 Spacer()
-                Text("导入本地音乐文件（mp3 / m4a / wav）\n作为背景音乐").multilineTextAlignment(.center).foregroundStyle(Theme.tertiary)
+                Text("导入本地音频文件（mp3 / m4a / wav）\n作为配乐、旁白或音效\n时间重叠的音频会自动放到新的音频轨").multilineTextAlignment(.center).foregroundStyle(Theme.tertiary)
                 Spacer()
             } else {
                 ScrollView {

@@ -120,7 +120,7 @@ extension Project {
               asset.duration >= EditLimits.minClipDuration else { return nil }
         let clip = AudioClip(assetID: assetID, start: Time.max(.zero, start), sourceIn: .zero, sourceOut: asset.duration)
         musicTrack.append(clip)
-        musicTrack.sort { $0.start < $1.start }
+        arrangeAudioLanes(priority: clip.id)
         return clip.id
     }
 
@@ -144,6 +144,7 @@ extension Project {
 
     public mutating func removeMusic(id: UUID) {
         musicTrack.removeAll { $0.id == id }
+        arrangeAudioLanes()
     }
 
     public mutating func updateMusic(id: UUID, _ body: (inout AudioClip) -> Void) {
@@ -156,7 +157,30 @@ extension Project {
         let half = musicTrack[i].duration / 2
         musicTrack[i].fadeIn = musicTrack[i].fadeIn.clamped(.zero, half)
         musicTrack[i].fadeOut = musicTrack[i].fadeOut.clamped(.zero, half)
-        musicTrack.sort { $0.start < $1.start }
+        arrangeAudioLanes(priority: id)
+    }
+
+    /// 音频轨数（至少 1）。
+    public var audioLaneCount: Int { max(1, (musicTrack.map(\.lane).max() ?? 0) + 1) }
+
+    /// 整理音频轨：同一条轨上重叠时，后放进来的片段（priority，即刚添加或移动的那个）换到下一条空闲的轨；
+    /// 然后收拢空轨，轨号从 0 连续。片段按开始时间排序。
+    public mutating func arrangeAudioLanes(priority: UUID? = nil) {
+        let order = musicTrack.indices.sorted { a, b in
+            let pa = musicTrack[a].id == priority, pb = musicTrack[b].id == priority
+            if pa != pb { return pb }
+            return (musicTrack[a].lane, musicTrack[a].start) < (musicTrack[b].lane, musicTrack[b].start)
+        }
+        var placed: [AudioClip] = []
+        for i in order {
+            var clip = musicTrack[i]
+            clip.lane = max(0, clip.lane)
+            while placed.contains(where: { $0.lane == clip.lane && $0.start < clip.end && clip.start < $0.end }) { clip.lane += 1 }
+            placed.append(clip)
+        }
+        let used = Set(placed.map(\.lane)).sorted()
+        let renumber = Dictionary(uniqueKeysWithValues: used.enumerated().map { ($1, $0) })
+        musicTrack = placed.map { var c = $0; c.lane = renumber[c.lane] ?? 0; return c }.sorted { ($0.start, $0.lane) < ($1.start, $1.lane) }
     }
 
     // MARK: 字幕
@@ -244,6 +268,7 @@ extension Project {
     public mutating func removeAsset(id: UUID) {
         for clip in mainTrack where clip.assetID == id { removeMain(id: clip.id) }
         musicTrack.removeAll { $0.assetID == id }
+        arrangeAudioLanes()
         assets.removeAll { $0.id == id }
         updateAutomaticColorMode()
     }
