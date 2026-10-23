@@ -160,6 +160,29 @@ extension Project {
         arrangeAudioLanes(priority: id)
     }
 
+    /// 主轨片段能否分离音频：有声音的视频，且未变速（音频轨不支持变速）。
+    public func canDetachAudio(id: UUID) -> Bool {
+        guard let clip = mainClip(id: id), let asset = asset(id: clip.assetID) else { return false }
+        return asset.kind == .video && asset.hasAudio && clip.speed == 1
+    }
+
+    /// 把主轨片段的原声放到音频轨上（对齐片段位置，带上音量和转场处的渐变），原片段静音。返回新音频的 id。
+    @discardableResult
+    public mutating func detachAudio(id: UUID) -> UUID? {
+        guard canDetachAudio(id: id), let clip = mainClip(id: id) else { return nil }
+        let layout = TimelineLayout(project: self)
+        guard let placement = layout.placement(for: id) else { return nil }
+        let next = placement.index + 1 < layout.placements.count ? layout.placements[placement.index + 1] : nil
+        var audio = AudioClip(assetID: clip.assetID, start: placement.start, sourceIn: clip.sourceIn, sourceOut: clip.sourceOut)
+        audio.volume = clip.volume
+        audio.fadeIn = placement.transitionIn?.duration ?? .zero
+        audio.fadeOut = next?.transitionIn?.duration ?? .zero
+        musicTrack.append(audio)
+        arrangeAudioLanes(priority: audio.id)
+        updateMain(id: id) { $0.muted = true }
+        return audio.id
+    }
+
     /// 音频轨数（至少 1）。
     public var audioLaneCount: Int { max(1, (musicTrack.map(\.lane).max() ?? 0) + 1) }
 

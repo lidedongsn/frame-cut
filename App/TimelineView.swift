@@ -439,6 +439,8 @@ private struct MainClipView: View {
         .contextMenu {
             Button("在播放头处分割") { model.splitAtPlayhead() }
             Button(clip.muted ? "取消静音" : "静音") { model.store.perform { $0.updateMain(id: clip.id) { $0.muted.toggle() } } }
+            Button("分离音频") { model.detachAudio(clip.id) }
+                .disabled(!model.project.canDetachAudio(id: clip.id))
             Divider()
             Button("复制调色") { model.selection = .video(clip.id); model.copyGrade() }
             Button("粘贴调色") { model.selection = .video(clip.id); model.pasteGrade() }

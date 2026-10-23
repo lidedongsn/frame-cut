@@ -317,6 +317,13 @@ final class EditorModel {
         if let newID { selection = .video(newID) }
     }
 
+    /// 分离音频：原声放到音频轨并选中它，原片段静音。
+    func detachAudio(_ id: UUID) {
+        var newID: UUID?
+        store.perform { newID = $0.detachAudio(id: id) }
+        if let newID { selection = .music(newID) }
+    }
+
     // MARK: 字幕编辑
 
     /// 请求清空全部字幕（弹确认框）。

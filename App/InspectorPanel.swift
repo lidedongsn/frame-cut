@@ -140,6 +140,12 @@ private struct VideoInspector: View {
     private var clip: VideoClip? { model.project.mainClip(id: id) }
     private var asset: MediaAsset? { clip.flatMap { model.project.asset(id: $0.assetID) } }
 
+    private var detachHelp: String {
+        if asset?.hasAudio == false { return "这段视频没有声音" }
+        if clip.map({ $0.speed != 1 }) == true { return "变速的片段不能分离音频，先把速度调回 1x" }
+        return "把原声放到音频轨上单独剪辑、调节，原片段静音。之后移动或修剪画面，音频不会跟着变。"
+    }
+
     var body: some View {
         InspectorHeader(title: asset?.kind == .image ? "照片" : "视频", icon: asset?.kind == .image ? "photo" : "film")
         if let asset {
@@ -198,6 +204,10 @@ private struct VideoInspector: View {
                 LabeledSlider(title: "音量", value: model.clipBinding(id, \.volume, default: 1), range: 0...2,
                               format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
                     .disabled(clip?.muted == true)
+                Button("分离音频") { model.detachAudio(id) }
+                    .buttonStyle(PanelButtonStyle())
+                    .disabled(!model.project.canDetachAudio(id: id))
+                    .help(detachHelp)
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {
