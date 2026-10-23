@@ -135,15 +135,12 @@ public final class BuiltComposition: @unchecked Sendable {
         for clip in project.musicTrack {
             guard let track = musicTracks[clip.id] else { continue }
             let p = AVMutableAudioMixInputParameters(track: track)
-            let v = clip.muted ? 0 : Float(clip.volume)
-            if clip.fadeIn > .zero {
-                p.setVolumeRamp(fromStartVolume: 0, toEndVolume: v,
-                                timeRange: CMTimeRange(start: clip.start.cmTime, duration: clip.fadeIn.cmTime))
-            }
-            p.setVolume(v, at: (clip.start + clip.fadeIn).cmTime)
-            if clip.fadeOut > .zero {
-                p.setVolumeRamp(fromStartVolume: v, toEndVolume: 0,
-                                timeRange: CMTimeRange(start: (clip.end - clip.fadeOut).cmTime, duration: clip.fadeOut.cmTime))
+            // 音量 × 轨道 × 淡入淡出 × 人声避让，按分段线性包络设置
+            let points = project.volumeEnvelope(for: clip).points
+            if let first = points.first { p.setVolume(Float(first.gain), at: first.time.cmTime) }
+            for (a, b) in zip(points, points.dropFirst()) where b.time > a.time {
+                p.setVolumeRamp(fromStartVolume: Float(a.gain), toEndVolume: Float(b.gain),
+                                timeRange: CMTimeRange(start: a.time.cmTime, end: b.time.cmTime))
             }
             params.append(p)
         }

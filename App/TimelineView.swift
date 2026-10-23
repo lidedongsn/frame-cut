@@ -9,6 +9,7 @@ private enum TL {
     static let music: CGFloat = 44
     static let subtitle: CGFloat = 30
     static let text: CGFloat = 24
+    static let duck: CGFloat = 16
     static let laneGap: CGFloat = 2
     static let gap: CGFloat = 8
     static let handle: CGFloat = 8
@@ -18,12 +19,15 @@ private enum TL {
 private struct Rows {
     let textLanes: Int
     let audioLanes: Int
+    /// 显示「人声」行（有人声区间或有音频开启了避让时）。
+    let showsDuck: Bool
 
     var textY: CGFloat { TL.ruler + TL.gap }
     func laneY(_ lane: Int) -> CGFloat { textY + CGFloat(lane) * (TL.text + TL.laneGap) }
     var textHeight: CGFloat { CGFloat(textLanes) * (TL.text + TL.laneGap) - TL.laneGap }
     var mainY: CGFloat { textY + textHeight + TL.gap }
-    var musicY: CGFloat { mainY + TL.main + TL.gap }
+    var duckY: CGFloat { mainY + TL.main + TL.gap }
+    var musicY: CGFloat { showsDuck ? duckY + TL.duck + TL.gap : duckY }
     func audioLaneY(_ lane: Int) -> CGFloat { musicY + CGFloat(lane) * (TL.music + TL.laneGap) }
     var musicHeight: CGFloat { CGFloat(audioLanes) * (TL.music + TL.laneGap) - TL.laneGap }
     var subtitleY: CGFloat { musicY + musicHeight + TL.gap }
@@ -42,7 +46,8 @@ struct TimelineView: View {
 
     private var textLanes: [UUID: Int] { TextClip.lanes(model.project.texts) }
     private var rows: Rows {
-        Rows(textLanes: max(1, TextClip.laneCount(model.project.texts)), audioLanes: model.project.audioLaneCount)
+        Rows(textLanes: max(1, TextClip.laneCount(model.project.texts)), audioLanes: model.project.audioLaneCount,
+             showsDuck: !model.project.duckRanges.isEmpty || model.project.musicTrack.contains { $0.ducks })
     }
 
     var body: some View {
@@ -73,6 +78,10 @@ struct TimelineView: View {
 
                         trackBackground(y: rows.textY, height: rows.textHeight, width: width)
                         trackBackground(y: rows.mainY, height: TL.main, width: width)
+                        if rows.showsDuck {
+                            trackBackground(y: rows.duckY, height: TL.duck, width: width)
+                            duckRow(y: rows.duckY)
+                        }
                         ForEach(0..<rows.audioLanes, id: \.self) { lane in
                             trackBackground(y: rows.audioLaneY(lane), height: TL.music, width: width)
                         }
@@ -155,6 +164,13 @@ struct TimelineView: View {
         ForEach(model.layout.placements.dropFirst(), id: \.clipID) { placement in
             TransitionMarker(model: model, placement: placement)
                 .offset(x: x(placement.start + (placement.transitionIn?.duration ?? .zero) / 2) - 10, y: mainY + TL.main / 2 - 10)
+        }
+    }
+
+    private func duckRow(y: CGFloat) -> some View {
+        ForEach(model.project.duckRanges) { range in
+            DuckRangeView(model: model, range: range, pps: pps)
+                .offset(x: x(range.start), y: y)
         }
     }
 
@@ -568,10 +584,25 @@ private struct MusicClipView: View {
                 }
                 ctx.fill(path, with: .color(Color.white.opacity(0.45)))
             }
+            // 音量曲线：淡入淡出、人声避让、静音一目了然（满高为 100%）
+            Canvas { ctx, size in
+                let envelope = model.project.volumeEnvelope(for: clip)
+                guard envelope.points.count > 1, clip.duration > .zero else { return }
+                let top: CGFloat = 16, bottom = size.height - 3
+                var path = Path()
+                for (i, p) in envelope.points.enumerated() {
+                    let x = CGFloat((p.time - clip.start).seconds / clip.duration.seconds) * size.width
+                    let y = bottom - CGFloat(min(1, p.gain)) * (bottom - top)
+                    if i == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+                }
+                ctx.stroke(path, with: .color(Theme.playhead.opacity(0.85)), lineWidth: 1.2)
+            }
+            .allowsHitTesting(false)
             HStack(spacing: 4) {
                 Image(systemName: "music.note").font(.system(size: 9))
                 Text(asset.name).font(.system(size: 10)).lineLimit(1)
-                if clip.muted { Image(systemName: "speaker.slash.fill").font(.system(size: 9)) }
+                if clip.muted || model.project.laneSettings(clip.lane).muted { Image(systemName: "speaker.slash.fill").font(.system(size: 9)) }
+                if clip.ducks { Image(systemName: "waveform.badge.minus").font(.system(size: 9)).help("有人声时调低") }
             }
             .foregroundStyle(.white)
             .padding(4)
@@ -599,6 +630,10 @@ private struct MusicClipView: View {
         .contextMenu {
             Button("在播放头处分割") { model.selection = .music(clip.id); model.splitAtPlayhead() }
             Button(clip.muted ? "取消静音" : "静音") { model.store.perform { $0.updateMusic(id: clip.id) { $0.muted.toggle() } } }
+            Button(model.project.laneSettings(clip.lane).muted ? "取消整条轨静音" : "整条轨静音") {
+                model.store.perform { $0.updateAudioLane(clip.lane) { $0.muted.toggle() } }
+            }
+            Button(clip.ducks ? "有人声时不调低" : "有人声时调低") { model.store.perform { $0.updateMusic(id: clip.id) { $0.ducks.toggle() } } }
             Divider()
             Button("删除", role: .destructive) { model.store.perform { $0.removeMusic(id: clip.id) } }
         }
@@ -770,6 +805,71 @@ private struct TextClipView: View {
             model.store.perform { p in
                 p.updateText(id: clip.id) { c in
                     if leading { c.start = Time.min(s.end - EditLimits.minClipDuration, s.start + delta) } else { c.end = s.end + delta }
+                }
+            }
+        } onEnd: { end() }
+    }
+}
+
+// MARK: - 人声区间
+
+private struct DuckRangeView: View {
+    @Bindable var model: EditorModel
+    let range: DuckRange
+    let pps: CGFloat
+
+    @State private var dragStart: DuckRange?
+
+    private var selected: Bool { model.selection == .duck(range.id) }
+    private var width: CGFloat { max(4, CGFloat(range.duration.seconds) * pps) }
+
+    var body: some View {
+        Text(width > 36 ? "人声" : "")
+            .font(.system(size: 9))
+            .padding(.horizontal, 4)
+            .frame(width: width, height: TL.duck, alignment: .leading)
+            .foregroundStyle(.white)
+            .background(Theme.duckRange)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(RoundedRectangle(cornerRadius: 3).stroke(selected ? Color.white : Theme.border, lineWidth: selected ? 2 : 1))
+            .overlay(alignment: .leading) { if selected { handle(leading: true) } }
+            .overlay(alignment: .trailing) { if selected { handle(leading: false) } }
+            .zIndex(selected ? 5 : 0)
+            .onTapGesture { model.selection = .duck(range.id) }
+            .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named("timeline"))
+                .onChanged { v in
+                    begin()
+                    guard let s = dragStart else { return }
+                    let d = Time.max(Time.zero - s.start, Time(seconds: Double(v.translation.width / pps)))
+                    model.store.perform { $0.updateDuckRange(id: range.id) { $0.start = s.start + d; $0.end = s.end + d } }
+                }
+                .onEnded { _ in end() })
+            .contextMenu {
+                Button("删除", role: .destructive) { model.store.perform { $0.removeDuckRange(id: range.id) } }
+            }
+            .help("人声区间：开启了避让的音频在这里调低")
+    }
+
+    private func begin() {
+        guard dragStart == nil else { return }
+        dragStart = range
+        model.selection = .duck(range.id)
+        model.store.beginCoalescing()
+    }
+
+    private func end() {
+        dragStart = nil
+        model.store.endCoalescing()
+    }
+
+    private func handle(leading: Bool) -> some View {
+        TrimHandle(leading: leading) { dx in
+            begin()
+            guard let s = dragStart else { return }
+            let delta = Time(seconds: Double(dx / pps))
+            model.store.perform { p in
+                p.updateDuckRange(id: range.id) { r in
+                    if leading { r.start = Time.min(s.end - EditLimits.minClipDuration, s.start + delta) } else { r.end = s.end + delta }
                 }
             }
         } onEnd: { end() }

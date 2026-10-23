@@ -180,6 +180,8 @@ extension Project {
         }
         let used = Set(placed.map(\.lane)).sorted()
         let renumber = Dictionary(uniqueKeysWithValues: used.enumerated().map { ($1, $0) })
+        // 轨道设置跟着轨道走；没有片段的轨连同设置一起去掉
+        if !audioLanes.isEmpty { audioLanes = used.map { laneSettings($0) } }
         musicTrack = placed.map { var c = $0; c.lane = renumber[c.lane] ?? 0; return c }.sorted { ($0.start, $0.lane) < ($1.start, $1.lane) }
     }
 

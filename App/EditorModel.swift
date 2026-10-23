@@ -12,6 +12,8 @@ enum Selection: Equatable {
     case music(UUID)
     case subtitle(UUID)
     case text(UUID)
+    /// 人声区间（避让）。
+    case duck(UUID)
     /// 转场，以其后的片段 id 标识。
     case transition(UUID)
 }
@@ -87,7 +89,9 @@ final class EditorModel {
     }
 
     func close() {
+        if recorder != nil { recorder?.stop(); recorder = nil }
         save()
+        trashUnusedRecordings()
         exportTask?.cancel()
         player.pause()
         player.replaceCurrentItem(with: nil)
@@ -116,6 +120,8 @@ final class EditorModel {
             if project.subtitle(id: id) == nil { selection = nil }
         case .text(let id):
             if project.text(id: id) == nil { selection = nil }
+        case .duck(let id):
+            if !project.duckRanges.contains(where: { $0.id == id }) { selection = nil }
         case nil:
             break
         }
@@ -373,6 +379,7 @@ final class EditorModel {
             case .music(let id): p.removeMusic(id: id)
             case .subtitle(let id): p.removeSubtitle(id: id)
             case .text(let id): p.removeText(id: id)
+            case .duck(let id): p.removeDuckRange(id: id)
             case .transition(let id): p.setTransition(nil, before: id)
             }
         }
@@ -408,6 +415,125 @@ final class EditorModel {
     var selectedText: TextClip? {
         if case .text(let id) = selection { return project.text(id: id) }
         return nil
+    }
+
+    // MARK: 人声避让
+
+    var generatingDuckRanges = false
+
+    /// 生成人声区间（替换现有区间，可撤销），并给 clipID 这段音频开启避让。
+    /// fromSubtitles：按字幕时间；否则检测视频原声和未开启避让的音频（旁白）的音量。
+    func generateDuckRanges(fromSubtitles: Bool, enableFor clipID: UUID?) {
+        if fromSubtitles {
+            let ranges = DuckRange.merged(project.subtitles.map { ($0.start, $0.end) })
+            applyDuckRanges(ranges, enableFor: clipID, source: "字幕")
+            return
+        }
+        var source = store.project
+        source.musicTrack = source.musicTrack.filter { !$0.ducks && $0.id != clipID }
+        generatingDuckRanges = true
+        Task {
+            defer { generatingDuckRanges = false }
+            do {
+                let samples = try await AudioExtractor.samples(project: source, original: true, music: !source.musicTrack.isEmpty)
+                let ranges = SpeechDetector.ranges(samples: samples, sampleRate: AudioExtractor.sampleRate)
+                applyDuckRanges(ranges, enableFor: clipID, source: "声音")
+            } catch {
+                errorMessage = "检测人声失败：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func applyDuckRanges(_ ranges: [DuckRange], enableFor clipID: UUID?, source: String) {
+        guard !ranges.isEmpty else {
+            notice = source == "字幕" ? "没有字幕，先识别字幕或手动添加人声区间。" : "没有检测到人声，可以手动添加人声区间。"
+            return
+        }
+        store.perform { p in
+            p.replaceDuckRanges(ranges)
+            if let clipID { p.updateMusic(id: clipID) { $0.ducks = true } }
+        }
+        notice = "按\(source)生成了 \(ranges.count) 个人声区间，可在时间线上拖动调整；⌘Z 撤销。"
+    }
+
+    func addDuckRangeAtPlayhead() {
+        var id: UUID?
+        let at = playhead
+        store.perform { id = $0.addDuckRange(at: at) }
+        if let id { selection = .duck(id) }
+    }
+
+    // MARK: 录音（旁白）
+
+    @ObservationIgnored private var recorder: AVAudioRecorder?
+    /// 正在录音：开始的时间线位置与开始时刻。
+    private(set) var recording: (start: Time, began: Date)?
+    var isRecording: Bool { recording != nil }
+
+    /// 从播放头开始录旁白：同时播放画面（静音，避免喇叭声音被录进去）。
+    func startRecording() {
+        guard recorder == nil else { return }
+        Task {
+            guard await AVCaptureDevice.requestAccess(for: .audio) else {
+                errorMessage = "FrameCut 没有麦克风权限。请在「系统设置 → 隐私与安全性 → 麦克风」里允许 FrameCut。"
+                return
+            }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd-HHmmss"
+            let stamp = formatter.string(from: Date())
+            let url = ProjectFile.recordingsDirectory(for: packageURL).appendingPathComponent("旁白 \(stamp).m4a")
+            do {
+                let r = try AVAudioRecorder(url: url, settings: [
+                    AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: 48_000, AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 128_000,
+                ])
+                guard r.prepareToRecord() else { throw CocoaError(.fileWriteUnknown) }
+                if isPlaying { togglePlay() }
+                let start = playhead
+                player.isMuted = true
+                r.record()
+                if playhead < duration { togglePlay() }
+                recorder = r
+                recording = (start, Date())
+            } catch {
+                player.isMuted = false
+                errorMessage = "无法开始录音：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    func stopRecording() {
+        guard let r = recorder, let rec = recording else { return }
+        r.stop()
+        recorder = nil
+        recording = nil
+        player.isMuted = false
+        if isPlaying { togglePlay() }
+        let url = r.url
+        Task {
+            do {
+                let asset = try await MediaProbe.probe(url: url)
+                guard asset.duration >= Time(seconds: 0.3) else {
+                    try? FileManager.default.removeItem(at: url)
+                    return
+                }
+                var id: UUID?
+                store.perform { p in
+                    p.addAssets([asset])
+                    id = p.addMusic(assetID: asset.id, at: rec.start)
+                }
+                if let id { selection = .music(id) }
+                notice = "已录制 \(asset.duration.displayString) 的旁白，放在音频轨上。"
+            } catch {
+                errorMessage = "录音没有保存成功：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// 关闭工程时，把素材库里已经删掉的录音移到废纸篓（关闭后无法撤销，不再需要它们）。
+    private func trashUnusedRecordings() {
+        for url in ProjectFile.unusedRecordings(in: store.project, packageURL: packageURL) {
+            try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        }
     }
 
     // MARK: 调色工作流
@@ -632,7 +758,7 @@ final class EditorModel {
             let big = event.modifierFlags.contains(.shift)
             let handled = MainActor.assumeIsolated { () -> Bool in
                 switch keyCode {
-                case 49: self.togglePlay() // 空格
+                case 49: if self.isRecording { self.stopRecording() } else { self.togglePlay() } // 空格
                 case 51, 117: self.deleteSelection() // Delete
                 case 123: self.step(frames: big ? -10 : -1)
                 case 124: self.step(frames: big ? 10 : 1)

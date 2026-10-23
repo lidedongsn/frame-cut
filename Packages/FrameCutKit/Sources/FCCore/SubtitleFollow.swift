@@ -41,6 +41,18 @@ extension Project {
         }.sorted { $0.start < $1.start }
     }
 
+    /// 主轨编辑（from → self）后重新定位人声区间（人声大多来自视频原声，跟着画面走）。
+    public func duckRangesFollowingMain(from old: Project) -> [DuckRange] {
+        guard !old.mainTrack.isEmpty else { return old.duckRanges }
+        let ranges = rangesFollowingMain(from: old, old.duckRanges.map { ($0.start, $0.end) })
+        return zip(old.duckRanges, ranges).compactMap { r, range in
+            guard let range else { return nil }
+            var r = r
+            (r.start, r.end) = range
+            return r
+        }.sorted { $0.start < $1.start }
+    }
+
     /// 把 old 时间线上的时间段换算到 self 的时间线；所在画面被删掉或剪掉时为 nil。
     private func rangesFollowingMain(from old: Project, _ ranges: [(start: Time, end: Time)]) -> [(start: Time, end: Time)?] {
         let oldLayout = TimelineLayout(project: old)

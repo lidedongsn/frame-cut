@@ -38,6 +38,7 @@ targets:
         LSMinimumSystemVersion: "14.0"
         LSApplicationCategoryType: public.app-category.video
         NSHumanReadableCopyright: ""
+        NSMicrophoneUsageDescription: 录制旁白时需要使用麦克风。声音只保存在你的工程里，不会上传。
         CFBundleDocumentTypes:
           - CFBundleTypeName: FrameCut Project
             CFBundleTypeRole: Editor

@@ -58,6 +58,11 @@ public struct Project: Codable, Equatable, Sendable {
     public var subtitleStyle = SubtitleStyle()
     /// 文字与标题（独立于字幕）。
     public var texts: [TextClip] = []
+    /// 人声区间：开启避让的音频在这些时间调低。
+    public var duckRanges: [DuckRange] = []
+    public var duck = DuckSettings()
+    /// 各条音频轨的静音与音量，下标为轨号。
+    public var audioLanes: [AudioLaneSettings] = []
     public var colorMode: ColorMode = .sdr
     /// 为 true 时色彩模式跟随素材（有 HDR 素材即 HDR）；用户手动设置后为 false。
     public var colorModeIsAutomatic = true
@@ -378,6 +383,8 @@ public struct AudioClip: Codable, Equatable, Identifiable, Sendable {
     /// 所在音频轨（0 为第一条）。同一条轨上的片段不重叠，由 arrangeAudioLanes 维护。
     public var lane = 0
     public var muted = false
+    /// 在人声区间内调低（人声避让）。
+    public var ducks = false
 
     public init(id: UUID = UUID(), assetID: UUID, start: Time, sourceIn: Time, sourceOut: Time) {
         self.id = id
@@ -405,6 +412,7 @@ extension AudioClip {
         fadeOut = try c.decodeIfPresent(Time.self, forKey: .fadeOut) ?? .zero
         lane = try c.decodeIfPresent(Int.self, forKey: .lane) ?? 0
         muted = try c.decodeIfPresent(Bool.self, forKey: .muted) ?? false
+        ducks = try c.decodeIfPresent(Bool.self, forKey: .ducks) ?? false
     }
 }
 
@@ -504,6 +512,9 @@ extension Project {
         subtitles = try c.decode([Subtitle].self, forKey: .subtitles)
         subtitleStyle = try c.decode(SubtitleStyle.self, forKey: .subtitleStyle)
         texts = try c.decodeIfPresent([TextClip].self, forKey: .texts) ?? []
+        duckRanges = try c.decodeIfPresent([DuckRange].self, forKey: .duckRanges) ?? []
+        duck = try c.decodeIfPresent(DuckSettings.self, forKey: .duck) ?? DuckSettings()
+        audioLanes = try c.decodeIfPresent([AudioLaneSettings].self, forKey: .audioLanes) ?? []
         colorMode = try c.decodeIfPresent(ColorMode.self, forKey: .colorMode) ?? .sdr
         colorModeIsAutomatic = try c.decodeIfPresent(Bool.self, forKey: .colorModeIsAutomatic) ?? true
         // 旧工程的画幅 / 帧率可能是手动设的

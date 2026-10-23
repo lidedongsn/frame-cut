@@ -20,6 +20,8 @@ struct InspectorPanel: View {
                     SubtitleInspector(model: model, id: id)
                 case .text(let id) where model.project.text(id: id) != nil:
                     TextInspector(model: model, id: id)
+                case .duck(let id) where model.project.duckRanges.contains(where: { $0.id == id }):
+                    DuckRangeInspector(model: model, id: id)
                 default:
                     ProjectInspector(model: model)
                 }
@@ -322,6 +324,13 @@ private struct MusicInspector: View {
         }
         Text("在时间线上左右拖动调整位置，上下拖动换到其他音频轨；拖动两端可裁剪，⌘B 在播放头处分割。配乐、旁白、音效可以放在不同的轨上同时播放。")
             .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
+            .fixedSize(horizontal: false, vertical: true)
+        if let clip = model.project.music(id: id) {
+            Divider().overlay(Theme.border)
+            AudioLaneSection(model: model, lane: clip.lane)
+            Divider().overlay(Theme.border)
+            DuckingSection(model: model, clipID: id)
+        }
     }
 }
 

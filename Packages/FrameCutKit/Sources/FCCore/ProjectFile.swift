@@ -33,6 +33,22 @@ public enum ProjectFile {
         return project
     }
 
+    /// 录音（旁白）存放在工程包里，跟着工程走。返回前会创建目录。
+    public static func recordingsDirectory(for packageURL: URL) -> URL {
+        let url = packageURL.appendingPathComponent("Recordings", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    /// 工程包里不再被素材库引用的录音。
+    public static func unusedRecordings(in project: Project, packageURL: URL) -> [URL] {
+        let folder = packageURL.appendingPathComponent("Recordings", isDirectory: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return [] }
+        func key(_ url: URL) -> String { url.resolvingSymlinksInPath().standardizedFileURL.path }
+        let used = Set(project.assets.map { key(URL(fileURLWithPath: $0.path)) })
+        return files.filter { !used.contains(key($0)) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
     public static func cacheDirectory(for packageURL: URL) -> URL {
         let url = packageURL.appendingPathComponent("cache", isDirectory: true)
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

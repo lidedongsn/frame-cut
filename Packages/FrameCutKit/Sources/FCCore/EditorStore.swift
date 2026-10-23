@@ -41,8 +41,9 @@ public final class EditorStore {
 
     private var subtitleFollow = FollowState<[Subtitle]>()
     private var textFollow = FollowState<[TextClip]>()
+    private var duckFollow = FollowState<[DuckRange]>()
 
-    /// 主轨时间布局变了时，这次没有改动的字幕（开启跟随时）和文字跟随主轨。
+    /// 主轨时间布局变了时，这次没有改动的字幕（开启跟随时）、文字和人声区间跟随主轨。
     /// 连续操作（拖动修剪）期间从同一个起点换算，拖回原处时也回到原处；
     /// 期间被别处改过（如识别完成）就以改过的状态为新起点，不覆盖它。
     private func followMain(_ next: inout Project) {
@@ -58,6 +59,13 @@ public final class EditorStore {
             if let changed = layoutChanged(from: base, to: next) {
                 next.texts = changed ? next.textsFollowingMain(from: base) : base.texts
                 textFollow.output = next.texts
+            }
+        }
+        if next.duckRanges == project.duckRanges {
+            let base = followBase(&duckFollow, current: project.duckRanges)
+            if let changed = layoutChanged(from: base, to: next) {
+                next.duckRanges = changed ? next.duckRangesFollowingMain(from: base) : base.duckRanges
+                duckFollow.output = next.duckRanges
             }
         }
     }
@@ -88,6 +96,7 @@ public final class EditorStore {
         coalescingSnapshot = nil
         subtitleFollow = FollowState()
         textFollow = FollowState()
+        duckFollow = FollowState()
         if snapshot != project { pushUndo(snapshot) }
     }
 

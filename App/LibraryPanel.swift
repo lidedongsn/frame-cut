@@ -190,6 +190,7 @@ private struct AudioTab: View {
                 Label("导入音频", systemImage: "plus").frame(maxWidth: .infinity)
             }
             .buttonStyle(PanelButtonStyle(prominent: true))
+            RecordButton(model: model)
             if audioAssets.isEmpty {
                 Spacer()
                 Text("导入本地音频文件（mp3 / m4a / wav）\n作为配乐、旁白或音效\n时间重叠的音频会自动放到新的音频轨").multilineTextAlignment(.center).foregroundStyle(Theme.tertiary)

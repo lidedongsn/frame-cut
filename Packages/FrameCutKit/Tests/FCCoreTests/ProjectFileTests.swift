@@ -73,4 +73,19 @@ final class ProjectFileTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: a.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: b.path))
     }
+
+    /// 工程包里的录音：素材库里已经没有的才算不再使用（撤销历史在关闭工程后就没了，此时清理才安全）。
+    func testUnusedRecordings() throws {
+        let pkg = dir.appendingPathComponent("r.framecut")
+        var p = Project(name: "r")
+        try ProjectFile.write(p, to: pkg)
+        let folder = ProjectFile.recordingsDirectory(for: pkg)
+        let kept = folder.appendingPathComponent("旁白 1.m4a")
+        let dropped = folder.appendingPathComponent("旁白 2.m4a")
+        try Data([1]).write(to: kept)
+        try Data([2]).write(to: dropped)
+        p.assets.append(MediaAsset(kind: .audio, name: "旁白 1", path: kept.path, duration: Time(seconds: 1), width: 0, height: 0, hasAudio: true, frameRate: 0))
+        XCTAssertEqual(ProjectFile.unusedRecordings(in: p, packageURL: pkg).map(\.lastPathComponent), ["旁白 2.m4a"])
+        XCTAssertEqual(ProjectFile.unusedRecordings(in: p, packageURL: dir.appendingPathComponent("none.framecut")), [])
+    }
 }

@@ -27,6 +27,9 @@ struct PlayerPanel: View {
                 } else {
                     PlayerLayerView(player: model.player)
                         .aspectRatio(model.project.aspect.ratio, contentMode: .fit)
+                        .overlay(alignment: .top) {
+                            if let rec = model.recording { RecordingBadge(began: rec.began).padding(8) }
+                        }
                         .overlay(alignment: .topLeading) {
                             if model.comparingOriginal {
                                 Text("原图").font(.system(size: 11, weight: .semibold))
