@@ -88,6 +88,16 @@ final class ExporterTests: XCTestCase {
         XCTAssertGreaterThan(samples.map(abs).max() ?? 0, 0.05)
     }
 
+    /// 分离音频后原片段静音，声音在音频轨上；只识别「视频原声」时仍要取到它，配乐不取。
+    func testAudioExtractorOriginalIncludesDetachedAudio() async throws {
+        var p = try await Fixtures.project(["landscape_10s.mp4"])
+        XCTAssertNotNil(p.detachAudio(id: p.mainTrack[0].id))
+        let original = try await AudioExtractor.samples(project: p)
+        XCTAssertGreaterThan(original.map(abs).max() ?? 0, 0.1)
+        let musicOnly = try await AudioExtractor.samples(project: p, original: false, music: true)
+        XCTAssertLessThan(musicOnly.map(abs).max() ?? 0, 0.001, "分离出的原声不算音频轨")
+    }
+
     func testAudioExtractorCanSkipOriginal() async throws {
         let p = try await Fixtures.project(["landscape_10s.mp4"])
         let none = try await AudioExtractor.samples(project: p, original: false)

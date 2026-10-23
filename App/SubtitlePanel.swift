@@ -100,7 +100,7 @@ struct SubtitlePanel: View {
                 Text("识别").foregroundStyle(Theme.secondary)
                 Toggle("视频原声", isOn: $useOriginal)
                     .disabled(isRunning)
-                    .help("识别主轨视频里录到的声音")
+                    .help("识别视频里录到的声音，包括分离到音频轨上的原声")
                 Toggle("音频轨", isOn: $useMusic)
                     .disabled(!hasMusic || isRunning)
                     .help(hasMusic ? "识别音频轨里的声音（配乐、旁白录音）" : "时间线上还没有音频轨")
@@ -163,7 +163,8 @@ struct SubtitlePanel: View {
     }
 
     private var isRunning: Bool { model.transcribeState.isRunning }
-    private var hasMusic: Bool { !model.project.musicTrack.isEmpty }
+    /// 音频轨上有配乐、旁白等（分离出的原声算「视频原声」）。
+    private var hasMusic: Bool { model.project.musicTrack.contains { !model.project.isOriginalSound($0) } }
     private var music: Bool { useMusic && hasMusic }
     private var hasSource: Bool { useOriginal || music }
 

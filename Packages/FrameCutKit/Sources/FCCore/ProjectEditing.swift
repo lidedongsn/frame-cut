@@ -160,10 +160,15 @@ extension Project {
         arrangeAudioLanes(priority: id)
     }
 
-    /// 主轨片段能否分离音频：有声音的视频，且未变速（音频轨不支持变速）。
+    /// 主轨片段能否分离音频：有声音的视频，未变速（音频轨不支持变速），且未静音（已分离过的也是静音的）。
     public func canDetachAudio(id: UUID) -> Bool {
         guard let clip = mainClip(id: id), let asset = asset(id: clip.assetID) else { return false }
-        return asset.kind == .video && asset.hasAudio && clip.speed == 1
+        return asset.kind == .video && asset.hasAudio && clip.speed == 1 && !clip.muted
+    }
+
+    /// 音频轨上的这段声音是否来自视频文件（分离出的原声）：识别字幕时算「视频原声」，不算「音频轨」。
+    public func isOriginalSound(_ clip: AudioClip) -> Bool {
+        asset(id: clip.assetID)?.kind == .video
     }
 
     /// 把主轨片段的原声放到音频轨上（对齐片段位置，带上音量和转场处的渐变），原片段静音。返回新音频的 id。

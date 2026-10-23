@@ -143,6 +143,7 @@ private struct VideoInspector: View {
     private var detachHelp: String {
         if asset?.hasAudio == false { return "这段视频没有声音" }
         if clip.map({ $0.speed != 1 }) == true { return "变速的片段不能分离音频，先把速度调回 1x" }
+        if clip?.muted == true { return "原声已静音或已分离。要重新分离，先取消静音" }
         return "把原声放到音频轨上单独剪辑、调节，原片段静音。之后移动或修剪画面，音频不会跟着变。"
     }
 

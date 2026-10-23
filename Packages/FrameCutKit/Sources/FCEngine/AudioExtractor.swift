@@ -6,10 +6,13 @@ import Foundation
 public enum AudioExtractor {
     public static let sampleRate = 16_000
 
-    /// original：主轨视频原声；music：音频轨（配乐、旁白）。两者都不选或都没有声音时返回空。
+    /// original：视频原声（主轨上的，以及分离到音频轨上的）；music：音频轨上的其他声音（配乐、旁白）。
+    /// 两者都不选或都没有声音时返回空。
     public static func samples(project: Project, original: Bool = true, music: Bool = false) async throws -> [Float] {
-        let built = try await CompositionBuilder.build(project: project, renderSize: CGSize(width: 64, height: 64), includeMusic: music)
-        let tracks = (original ? built.laneAudioTracks.compactMap { $0 } : []) + (music ? Array(built.musicTracks.values) : [])
+        let wanted = project.musicTrack.filter { project.isOriginalSound($0) ? original : music }.map(\.id)
+        let built = try await CompositionBuilder.build(project: project, renderSize: CGSize(width: 64, height: 64),
+                                                       includeMusic: !wanted.isEmpty)
+        let tracks = (original ? built.laneAudioTracks.compactMap { $0 } : []) + wanted.compactMap { built.musicTracks[$0] }
         guard !tracks.isEmpty else { return [] }
 
         let reader = try AVAssetReader(asset: built.composition)

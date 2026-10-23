@@ -50,6 +50,27 @@ final class DetachAudioTests: XCTestCase {
         XCTAssertEqual(p.musicTrack, [])
     }
 
+    /// 已静音（包括已经分离过）的片段不能再分离：否则会叠出一份同样的声音，或让本来静音的原声响起来。
+    func testCannotDetachMutedClip() {
+        var p = makeProject(clipSeconds: [5])
+        let id = p.mainTrack[0].id
+        XCTAssertNotNil(p.detachAudio(id: id))
+        XCTAssertFalse(p.canDetachAudio(id: id))
+        XCTAssertNil(p.detachAudio(id: id))
+        XCTAssertEqual(p.musicTrack.count, 1)
+    }
+
+    /// 音频轨上来自视频文件的声音（分离出的原声）算「视频原声」，配乐、旁白不算。
+    func testOriginalSoundIncludesDetachedAudio() {
+        var p = makeProject(clipSeconds: [5])
+        let bgm = MediaAsset(kind: .audio, name: "bgm", path: "/bgm", duration: t(30), width: 0, height: 0, hasAudio: true, frameRate: 0)
+        p.assets.append(bgm)
+        let music = p.addMusic(assetID: bgm.id, at: .zero)!
+        let detached = p.detachAudio(id: p.mainTrack[0].id)!
+        XCTAssertTrue(p.isOriginalSound(p.music(id: detached)!))
+        XCTAssertFalse(p.isOriginalSound(p.music(id: music)!))
+    }
+
     func testDetachedAudioGoesToFreeLane() {
         var p = makeProject(clipSeconds: [10])
         let bgm = MediaAsset(kind: .audio, name: "bgm", path: "/bgm", duration: t(30), width: 0, height: 0, hasAudio: true, frameRate: 0)
