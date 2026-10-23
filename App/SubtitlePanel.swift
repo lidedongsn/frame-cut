@@ -42,7 +42,6 @@ private struct ModelStorageRow: View {
 struct SubtitlePanel: View {
     @Bindable var model: EditorModel
     @State private var confirmReplace = false
-    @State private var showStyle = false
     @AppStorage("subtitle.language") private var language = TranscribeLanguage.chinese.rawValue
     @AppStorage("subtitle.useOriginal") private var useOriginal = true
     @AppStorage("subtitle.useMusic") private var useMusic = false
@@ -111,12 +110,14 @@ struct SubtitlePanel: View {
             statusView
             ModelStorageRow(model: model)
 
-            DisclosureGroup(isExpanded: $showStyle) {
-                StyleEditor(model: model).padding(.top, 8)
+            Button {
+                model.showSubtitleStyle()
             } label: {
-                Text("字幕样式").font(.system(size: 12, weight: .medium))
+                Label("字幕样式", systemImage: "textformat").frame(maxWidth: .infinity)
             }
-            .tint(Theme.secondary)
+            .buttonStyle(PanelButtonStyle())
+            .disabled(model.project.subtitles.isEmpty)
+            .help(model.project.subtitles.isEmpty ? "还没有字幕" : "在右侧调整字体、字号、颜色和位置（对全部字幕生效）")
 
             Divider().overlay(Theme.border)
 
@@ -264,7 +265,8 @@ private struct SubtitleRow: View {
     }
 }
 
-private struct StyleEditor: View {
+/// 字幕样式（对全部字幕生效），显示在右侧检查器里。
+struct SubtitleStyleEditor: View {
     @Bindable var model: EditorModel
 
     private let fonts: [(String, String)] = [

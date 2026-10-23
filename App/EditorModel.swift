@@ -346,6 +346,15 @@ final class EditorModel {
 
     // MARK: 字幕编辑
 
+    /// 在右侧显示字幕样式：选中播放头处的字幕，没有则选第一条。
+    func showSubtitleStyle() {
+        if case .subtitle = selection { return }
+        let t = playhead
+        if let sub = project.subtitles.first(where: { $0.start <= t && t < $0.end }) ?? project.subtitles.first {
+            selection = .subtitle(sub.id)
+        }
+    }
+
     /// 请求清空全部字幕（弹确认框）。
     var confirmClearSubtitles = false
 

@@ -399,9 +399,10 @@ private struct SubtitleInspector: View {
             Text("\(sub.start.displayString) – \(sub.end.displayString)")
                 .font(.system(size: 11).monospacedDigit()).foregroundStyle(Theme.secondary)
         }
-        Text("样式对全部字幕生效，在左侧「字幕」中调整。")
-            .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
         Button("删除这条字幕", role: .destructive) { model.deleteSelection() }
             .buttonStyle(PanelButtonStyle())
+        Divider().overlay(Theme.border)
+        SectionTitle("样式（全部字幕）")
+        SubtitleStyleEditor(model: model)
     }
 }
