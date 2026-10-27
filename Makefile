@@ -4,7 +4,7 @@ DD        := build/DD
 APP_DEBUG := $(DD)/Build/Products/Debug/FrameCut.app
 APP_REL   := $(DD)/Build/Products/Release/FrameCut.app
 
-.PHONY: help setup project build release run run-release dmg icon test test-media bench check clean clean-all
+.PHONY: help setup project build release run run-release dmg icon strings test test-media bench check clean clean-all
 
 help:            ## 列出命令
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
@@ -32,6 +32,16 @@ run-release: release ## 构建并打开发布版
 
 dmg: release     ## 打包安装包 build/FrameCut-版本号.dmg（可发给别人）
 	./scripts/make-dmg.sh
+
+strings: build    ## 把代码里新增或改动的界面文字同步进翻译文件（*.xcstrings），再补英文翻译
+	@sync() { cat=$$1; shift; xcrun xcstringstool sync $$cat $$(find "$$@" -name '*.stringsdata' \
+		! -name ExtractedAppShortcutsMetadata.stringsdata ! -name GeneratedAssetSymbols.stringsdata | sed 's/^/--stringsdata /'); }; \
+	I=$(DD)/Build/Intermediates.noindex; \
+	sync App/Localizable.xcstrings $$I/FrameCut.build; \
+	for t in FCCore FCMedia FCEngine FCTranscribe; do \
+		sync $(PKG)/Sources/$$t/Localizable.xcstrings $$(find $$I/FrameCutKit.build -type d -name $$t.build); \
+	done
+	@echo "✓ 已同步。未翻译的条目在 Xcode 里打开 .xcstrings 可以看到"
 
 icon:            ## 由 scripts/make-icon.swift 重新生成应用图标
 	swift scripts/make-icon.swift App/Assets.xcassets/AppIcon.appiconset

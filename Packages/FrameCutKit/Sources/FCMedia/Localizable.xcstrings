@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "不支持的文件：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsupported file: %@"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

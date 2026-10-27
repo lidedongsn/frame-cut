@@ -366,34 +366,34 @@ final class EditorModel {
     /// 导入 SRT，替换现有字幕（可撤销）。导入的时间按当前时间线对齐。
     func importSRT() {
         let panel = NSOpenPanel()
-        panel.title = "导入 SRT 字幕"
+        panel.title = String(localized: "导入 SRT 字幕")
         panel.allowedContentTypes = [UTType(filenameExtension: "srt") ?? .plainText]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = try? Data(contentsOf: url) else {
-            errorMessage = "无法读取字幕文件"
+            errorMessage = String(localized: "无法读取字幕文件")
             return
         }
         let subs = SRT.decode(data: data)
         guard !subs.isEmpty else {
-            errorMessage = "没有在文件里找到 SRT 字幕"
+            errorMessage = String(localized: "没有在文件里找到 SRT 字幕")
             return
         }
         store.perform { $0.replaceSubtitles(subs) }
         if case .subtitle = selection { selection = nil }
-        notice = "已导入 \(subs.count) 条字幕。"
+        notice = String(localized: "已导入 \(subs.count) 条字幕。")
     }
 
     func exportSRT() {
         let panel = NSSavePanel()
-        panel.title = "导出 SRT 字幕"
+        panel.title = String(localized: "导出 SRT 字幕")
         panel.allowedContentTypes = [UTType(filenameExtension: "srt") ?? .plainText]
         panel.nameFieldStringValue = project.name + ".srt"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try SRT.encode(project.subtitles).write(to: url, atomically: true, encoding: .utf8)
-            notice = "已导出 \(project.subtitles.count) 条字幕。"
+            notice = String(localized: "已导出 \(project.subtitles.count) 条字幕。")
         } catch {
-            errorMessage = "无法写入字幕文件：\(error.localizedDescription)"
+            errorMessage = String(localized: "无法写入字幕文件：\(error.localizedDescription)")
         }
     }
 
@@ -462,7 +462,7 @@ final class EditorModel {
     func generateDuckRanges(fromSubtitles: Bool, enableFor clipID: UUID?) {
         if fromSubtitles {
             let ranges = DuckRange.merged(project.subtitles.map { ($0.start, $0.end) })
-            applyDuckRanges(ranges, enableFor: clipID, source: "字幕")
+            applyDuckRanges(ranges, enableFor: clipID, fromSubtitles: true)
             return
         }
         var source = store.project
@@ -473,23 +473,25 @@ final class EditorModel {
             do {
                 let samples = try await AudioExtractor.samples(project: source, original: true, music: !source.musicTrack.isEmpty)
                 let ranges = SpeechDetector.ranges(samples: samples, sampleRate: AudioExtractor.sampleRate)
-                applyDuckRanges(ranges, enableFor: clipID, source: "声音")
+                applyDuckRanges(ranges, enableFor: clipID, fromSubtitles: false)
             } catch {
-                errorMessage = "检测人声失败：\(error.localizedDescription)"
+                errorMessage = String(localized: "检测人声失败：\(error.localizedDescription)")
             }
         }
     }
 
-    private func applyDuckRanges(_ ranges: [DuckRange], enableFor clipID: UUID?, source: String) {
+    private func applyDuckRanges(_ ranges: [DuckRange], enableFor clipID: UUID?, fromSubtitles: Bool) {
         guard !ranges.isEmpty else {
-            notice = source == "字幕" ? "没有字幕，先识别字幕或手动添加人声区间。" : "没有检测到人声，可以手动添加人声区间。"
+            notice = fromSubtitles ? String(localized: "没有字幕，先识别字幕或手动添加人声区间。") : String(localized: "没有检测到人声，可以手动添加人声区间。")
             return
         }
         store.perform { p in
             p.replaceDuckRanges(ranges)
             if let clipID { p.updateMusic(id: clipID) { $0.ducks = true } }
         }
-        notice = "按\(source)生成了 \(ranges.count) 个人声区间，可在时间线上拖动调整；⌘Z 撤销。"
+        notice = fromSubtitles
+            ? String(localized: "按字幕生成了 \(ranges.count) 个人声区间，可在时间线上拖动调整；⌘Z 撤销。")
+            : String(localized: "按声音生成了 \(ranges.count) 个人声区间，可在时间线上拖动调整；⌘Z 撤销。")
     }
 
     func addDuckRangeAtPlayhead() {
@@ -511,13 +513,13 @@ final class EditorModel {
         guard recorder == nil else { return }
         Task {
             guard await AVCaptureDevice.requestAccess(for: .audio) else {
-                errorMessage = "FrameCut 没有麦克风权限。请在「系统设置 → 隐私与安全性 → 麦克风」里允许 FrameCut。"
+                errorMessage = String(localized: "FrameCut 没有麦克风权限。请在「系统设置 → 隐私与安全性 → 麦克风」里允许 FrameCut。")
                 return
             }
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyyMMdd-HHmmss"
             let stamp = formatter.string(from: Date())
-            let url = ProjectFile.recordingsDirectory(for: packageURL).appendingPathComponent("旁白 \(stamp).m4a")
+            let url = ProjectFile.recordingsDirectory(for: packageURL).appendingPathComponent(String(localized: "旁白 \(stamp).m4a"))
             do {
                 let r = try AVAudioRecorder(url: url, settings: [
                     AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: 48_000, AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 128_000,
@@ -532,7 +534,7 @@ final class EditorModel {
                 recording = (start, Date())
             } catch {
                 player.isMuted = false
-                errorMessage = "无法开始录音：\(error.localizedDescription)"
+                errorMessage = String(localized: "无法开始录音：\(error.localizedDescription)")
             }
         }
     }
@@ -558,9 +560,9 @@ final class EditorModel {
                     id = p.addMusic(assetID: asset.id, at: rec.start)
                 }
                 if let id { selection = .music(id) }
-                notice = "已录制 \(asset.duration.displayString) 的旁白，放在音频轨上。"
+                notice = String(localized: "已录制 \(asset.duration.displayString) 的旁白，放在音频轨上。")
             } catch {
-                errorMessage = "录音没有保存成功：\(error.localizedDescription)"
+                errorMessage = String(localized: "录音没有保存成功：\(error.localizedDescription)")
             }
         }
     }
@@ -588,7 +590,7 @@ final class EditorModel {
     func copyGrade() {
         guard let clip = selectedClip else { return }
         copiedFilter = clip.filter
-        notice = "已复制调色。选中其他片段后按 ⌥⌘V 粘贴。"
+        notice = String(localized: "已复制调色。选中其他片段后按 ⌥⌘V 粘贴。")
     }
 
     func pasteGrade() {
@@ -633,15 +635,15 @@ final class EditorModel {
                 }
             }
         }
-        if !failed.isEmpty { errorMessage = "以下文件无法导入：\(failed.joined(separator: "、"))" }
+        if !failed.isEmpty { errorMessage = String(localized: "以下文件无法导入：\(failed.joined(separator: String(localized: "、", comment: "列表分隔符")))") }
         var notes: [String] = []
         if wasAutoFormat, !project.formatIsAutomatic {
-            notes.append("已按素材设置画面为 \(project.aspect.displayName) · \(project.frameRate) fps")
+            notes.append(String(localized: "已按素材设置画面为 \(project.aspect.displayName) · \(project.frameRate) fps"))
         }
         if !wasHDR, project.colorMode == .hdr {
-            notes.append("检测到 HDR 素材，工程已切换为 HDR，预览与导出保留高光细节")
+            notes.append(String(localized: "检测到 HDR 素材，工程已切换为 HDR，预览与导出保留高光细节"))
         }
-        if !notes.isEmpty { notice = notes.joined(separator: "；") + "。可在右侧工程设置中修改。" }
+        if !notes.isEmpty { notice = notes.joined(separator: String(localized: "；", comment: "两句提示之间的分隔符")) + String(localized: "。可在右侧工程设置中修改。") }
     }
 
     /// 从素材库删除素材（连同时间线上用到它的片段）。
@@ -649,10 +651,10 @@ final class EditorModel {
         let used = project.mainTrack.contains { $0.assetID == asset.id } || project.musicTrack.contains { $0.assetID == asset.id }
         if used {
             let alert = NSAlert()
-            alert.messageText = "删除“\(asset.name)”？"
-            alert.informativeText = "时间线上用到这个素材的片段也会一起删除。可以用 ⌘Z 撤销。"
-            alert.addButton(withTitle: "删除")
-            alert.addButton(withTitle: "取消")
+            alert.messageText = String(localized: "删除“\(asset.name)”？")
+            alert.informativeText = String(localized: "时间线上用到这个素材的片段也会一起删除。可以用 ⌘Z 撤销。")
+            alert.addButton(withTitle: String(localized: "删除"))
+            alert.addButton(withTitle: String(localized: "取消"))
             guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
         store.perform { $0.removeAsset(id: asset.id) }
@@ -673,7 +675,7 @@ final class EditorModel {
 
     func relink(_ asset: MediaAsset) {
         let panel = NSOpenPanel()
-        panel.title = "重新定位：\(asset.name)"
+        panel.title = String(localized: "重新定位：\(asset.name)")
         panel.allowedContentTypes = MediaProbe.supportedTypes
         guard panel.runModal() == .OK, let url = panel.url else { return }
         store.perform { $0.relinkAsset(id: asset.id, to: url.path, bookmark: try? url.bookmarkData(options: .minimalBookmark)) }
@@ -698,7 +700,7 @@ final class EditorModel {
             try ProjectFile.write(store.project, to: packageURL)
             lastSaved = Date()
         } catch {
-            errorMessage = "保存失败：\(error.localizedDescription)"
+            errorMessage = String(localized: "保存失败：\(error.localizedDescription)")
             Log.project.error("保存失败：\(error.localizedDescription, privacy: .public)")
         }
     }
@@ -726,10 +728,10 @@ final class EditorModel {
                     do {
                         try srt.write(to: srtURL, atomically: true, encoding: .utf8)
                         if srtURL.deletingPathExtension().lastPathComponent != url.deletingPathExtension().lastPathComponent {
-                            self?.notice = "已有同名字幕文件，新的字幕保存为「\(srtURL.lastPathComponent)」。"
+                            self?.notice = String(localized: "已有同名字幕文件，新的字幕保存为「\(srtURL.lastPathComponent)」。")
                         }
                     } catch {
-                        self?.errorMessage = "视频已导出，但字幕文件写入失败：\(error.localizedDescription)"
+                        self?.errorMessage = String(localized: "视频已导出，但字幕文件写入失败：\(error.localizedDescription)")
                     }
                 }
                 self?.exportState = .done(url)
@@ -754,27 +756,27 @@ final class EditorModel {
 
     func transcribe(language: TranscribeLanguage, original: Bool, music: Bool) {
         if case .running = transcribeState { return }
-        transcribeState = .running("正在提取音频…", nil)
+        transcribeState = .running(String(localized: "正在提取音频…"), nil)
         let project = store.project
         Task { [weak self] in
             do {
                 let samples = try await AudioExtractor.samples(project: project, original: original, music: music)
                 guard !samples.isEmpty else {
-                    self?.transcribeState = .failed(music ? "所选的声音来源里没有声音，无法识别" : "主轨视频没有声音，无法识别")
+                    self?.transcribeState = .failed(music ? String(localized: "所选的声音来源里没有声音，无法识别") : String(localized: "主轨视频没有声音，无法识别"))
                     return
                 }
                 let segments = try await WhisperKitTranscriber.shared.transcribe(samples: samples, language: language) { progress in
                     Task { @MainActor in
                         switch progress {
-                        case .downloading(let p): self?.transcribeState = .running("首次使用，正在下载识别模型…", p)
-                        case .loading: self?.transcribeState = .running("正在加载模型…（首次加载需要一两分钟）", nil)
-                        case .transcribing(let p): self?.transcribeState = .running("正在识别…", p)
+                        case .downloading(let p): self?.transcribeState = .running(String(localized: "首次使用，正在下载识别模型…"), p)
+                        case .loading: self?.transcribeState = .running(String(localized: "正在加载模型…（首次加载需要一两分钟）"), nil)
+                        case .transcribing(let p): self?.transcribeState = .running(String(localized: "正在识别…"), p)
                         }
                     }
                 }
                 let subs = segments.map { Subtitle(start: $0.start, end: $0.end, text: $0.text) }
                 self?.store.perform { $0.applyTranscription(subs, recordedOn: project, original: original, music: music) }
-                self?.transcribeState = subs.isEmpty ? .failed("没有识别到语音") : .idle
+                self?.transcribeState = subs.isEmpty ? .failed(String(localized: "没有识别到语音")) : .idle
                 Log.transcribe.info("识别完成：\(subs.count) 条字幕")
             } catch {
                 self?.transcribeState = .failed(error.localizedDescription)

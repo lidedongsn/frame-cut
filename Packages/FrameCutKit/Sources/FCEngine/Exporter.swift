@@ -7,7 +7,7 @@ public struct ExportSettings: Equatable, Sendable {
     public enum Codec: String, CaseIterable, Sendable {
         case h264, hevc
 
-        public var displayName: String { self == .h264 ? "H.264（兼容性好）" : "HEVC（体积小）" }
+        public var displayName: String { self == .h264 ? String(localized: "H.264（兼容性好）", bundle: .module) : String(localized: "HEVC（体积小）", bundle: .module) }
     }
 
     public var shortSide: Int
@@ -37,7 +37,7 @@ public enum ExportError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .failed(let reason): "导出失败：\(reason)"
+        case .failed(let reason): String(localized: "导出失败：\(reason)", bundle: .module)
         }
     }
 }
@@ -89,7 +89,7 @@ public final class Exporter: @unchecked Sendable {
         writer.shouldOptimizeForNetworkUse = true
         let videoSettings = Self.videoSettings(settings, size: size)
         guard writer.canApply(outputSettings: videoSettings, forMediaType: .video) else {
-            throw ExportError.failed("编码器不支持当前设置")
+            throw ExportError.failed(String(localized: "编码器不支持当前设置", bundle: .module))
         }
         let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
         videoInput.expectsMediaDataInRealTime = false
@@ -105,8 +105,8 @@ public final class Exporter: @unchecked Sendable {
             audioInput = input
         }
 
-        guard reader.startReading() else { throw ExportError.failed(reader.error?.localizedDescription ?? "无法读取") }
-        guard writer.startWriting() else { throw ExportError.failed(writer.error?.localizedDescription ?? "无法写入") }
+        guard reader.startReading() else { throw ExportError.failed(reader.error?.localizedDescription ?? String(localized: "无法读取", bundle: .module)) }
+        guard writer.startWriting() else { throw ExportError.failed(writer.error?.localizedDescription ?? String(localized: "无法写入", bundle: .module)) }
         writer.startSession(atSourceTime: .zero)
 
         let job = ExportJob(reader: reader, writer: writer, duration: built.duration.seconds, progress: progress)
@@ -214,11 +214,11 @@ private final class ExportJob: @unchecked Sendable {
             group.notify(queue: .global()) { c.resume() }
         }
         if isCancelled { throw CancellationError() }
-        if reader.status == .failed { throw ExportError.failed(reader.error?.localizedDescription ?? "读取失败") }
+        if reader.status == .failed { throw ExportError.failed(reader.error?.localizedDescription ?? String(localized: "读取失败", bundle: .module)) }
 
         await writer.finishWriting()
         if isCancelled { throw CancellationError() }
-        if writer.status != .completed { throw ExportError.failed(writer.error?.localizedDescription ?? "写入失败") }
+        if writer.status != .completed { throw ExportError.failed(writer.error?.localizedDescription ?? String(localized: "写入失败", bundle: .module)) }
     }
 
     private func pump(_ output: AVAssetReaderOutput, into input: AVAssetWriterInput, group: DispatchGroup, reportsProgress: Bool) {

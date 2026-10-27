@@ -1,0 +1,156 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    ".cube 数据不完整（应有 %lld 行，实际 %lld 行）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The .cube data is incomplete (expected %lld rows, found %lld)"
+          }
+        }
+      }
+    },
+    "H.264（兼容性好）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "H.264 (most compatible)"
+          }
+        }
+      }
+    },
+    "HEVC（体积小）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HEVC (smaller files)"
+          }
+        }
+      }
+    },
+    "不是有效的 .cube 文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not a valid .cube file"
+          }
+        }
+      }
+    },
+    "写入失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write failed"
+          }
+        }
+      }
+    },
+    "导出失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export failed: %@"
+          }
+        }
+      }
+    },
+    "找不到素材：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Missing media: %@"
+          }
+        }
+      }
+    },
+    "无法写入" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t write"
+          }
+        }
+      }
+    },
+    "无法读取" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t read"
+          }
+        }
+      }
+    },
+    "无法读取音频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t read audio"
+          }
+        }
+      }
+    },
+    "时间线上还没有视频或图片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no videos or photos on the timeline yet"
+          }
+        }
+      }
+    },
+    "暂不支持 1D LUT，请使用 3D LUT" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1D LUTs aren’t supported yet. Please use a 3D LUT"
+          }
+        }
+      }
+    },
+    "编码器不支持当前设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The encoder doesn’t support these settings"
+          }
+        }
+      }
+    },
+    "读取失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read failed"
+          }
+        }
+      }
+    },
+    "读取音频失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t read audio"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

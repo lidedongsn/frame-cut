@@ -9,7 +9,7 @@ public enum MediaProbeError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupported(let name): "不支持的文件：\(name)"
+        case .unsupported(let name): String(localized: "不支持的文件：\(name)", bundle: .module)
         }
     }
 }

@@ -133,9 +133,9 @@ struct ExportSheet: View {
 
     private var rangeHint: String {
         switch settings.dynamicRange {
-        case .hlg: "兼容性最好的 HDR 格式：iPhone、抖音、B 站、YouTube 都支持，在普通屏幕上也能正常显示。"
-        case .pq: "HDR10：适合电视和专业平台，带 1000 尼特 HDR10 元数据。普通屏幕上依赖播放器做色调映射。"
-        case .sdr: "转为普通视频：高光平滑压缩，不会过曝，适合不支持 HDR 的平台。"
+        case .hlg: String(localized: "兼容性最好的 HDR 格式：iPhone、抖音、B 站、YouTube 都支持，在普通屏幕上也能正常显示。")
+        case .pq: String(localized: "HDR10：适合电视和专业平台，带 1000 尼特 HDR10 元数据。普通屏幕上依赖播放器做色调映射。")
+        case .sdr: String(localized: "转为普通视频：高光平滑压缩，不会过曝，适合不支持 HDR 的平台。")
         }
     }
 

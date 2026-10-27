@@ -24,7 +24,7 @@ public enum AudioExtractor {
         output.audioMix = built.makeAudioMix(project: project)
         output.audioTimePitchAlgorithm = .spectral
         reader.add(output)
-        guard reader.startReading() else { throw reader.error ?? ExportError.failed("无法读取音频") }
+        guard reader.startReading() else { throw reader.error ?? ExportError.failed(String(localized: "无法读取音频", bundle: .module)) }
 
         var samples: [Float] = []
         samples.reserveCapacity(Int(built.duration.seconds * Double(sampleRate)) + sampleRate)
@@ -38,7 +38,7 @@ public enum AudioExtractor {
             let count = length / MemoryLayout<Float>.size
             pointer.withMemoryRebound(to: Float.self, capacity: count) { samples.append(contentsOf: UnsafeBufferPointer(start: $0, count: count)) }
         }
-        if reader.status == .failed { throw reader.error ?? ExportError.failed("读取音频失败") }
+        if reader.status == .failed { throw reader.error ?? ExportError.failed(String(localized: "读取音频失败", bundle: .module)) }
         return samples
     }
 }

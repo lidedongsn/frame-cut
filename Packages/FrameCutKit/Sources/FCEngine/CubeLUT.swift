@@ -9,9 +9,9 @@ struct CubeLUT: Sendable {
 
         var errorDescription: String? {
             switch self {
-            case .notCube: "不是有效的 .cube 文件"
-            case .unsupported1D: "暂不支持 1D LUT，请使用 3D LUT"
-            case .wrongCount(let e, let g): ".cube 数据不完整（应有 \(e) 行，实际 \(g) 行）"
+            case .notCube: String(localized: "不是有效的 .cube 文件", bundle: .module)
+            case .unsupported1D: String(localized: "暂不支持 1D LUT，请使用 3D LUT", bundle: .module)
+            case .wrongCount(let e, let g): String(localized: ".cube 数据不完整（应有 \(e) 行，实际 \(g) 行）", bundle: .module)
             }
         }
     }

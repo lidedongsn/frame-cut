@@ -5,7 +5,7 @@ public enum ProjectFileError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let v): "工程文件版本（\(v)）高于当前应用支持的版本，请升级 FrameCut。"
+        case .unsupportedVersion(let v): String(localized: "工程文件版本（\(v)）高于当前应用支持的版本，请升级 FrameCut。", bundle: .module)
         }
     }
 }

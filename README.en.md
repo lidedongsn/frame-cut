@@ -89,7 +89,7 @@ Most iPhone footage is HDR (Dolby Vision / HLG). FrameCut detects it and keeps t
 | **Export** | 720p–4K, 24–60 fps, H.264 / HEVC hardware encoding, no watermark |
 | **Projects** | Autosave; relink media that has been moved |
 
-> The interface is currently in Chinese.
+> The interface follows your system language: English or Simplified Chinese.
 
 ## Install
 
@@ -117,6 +117,7 @@ make run-release   # build and open the Release app (recommended for daily use)
 make test          # unit tests (generates test media into TestMedia/ with ffmpeg on first run)
 make check         # pre-commit check: tests + build
 make dmg           # package build/FrameCut-<version>.dmg, ready to share
+make strings       # after changing UI text, sync new strings into the catalogs (*.xcstrings)
 make help          # list all commands
 ```
 

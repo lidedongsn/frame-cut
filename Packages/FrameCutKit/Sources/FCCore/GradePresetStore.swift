@@ -39,7 +39,7 @@ public final class GradePresetStore {
     @discardableResult
     public func save(name: String, filter: FilterSettings) throws -> GradePreset {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let preset = GradePreset(name: trimmed.isEmpty ? "我的调色 \(presets.count + 1)" : trimmed, filter: filter)
+        let preset = GradePreset(name: trimmed.isEmpty ? String(localized: "我的调色 \(presets.count + 1)", bundle: .module) : trimmed, filter: filter)
         presets.append(preset)
         try persist()
         return preset

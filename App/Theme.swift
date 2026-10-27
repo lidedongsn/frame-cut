@@ -24,8 +24,8 @@ enum Theme {
 
 /// 面板小标题。
 struct SectionTitle: View {
-    let text: String
-    init(_ text: String) { self.text = text }
+    let text: LocalizedStringKey
+    init(_ text: LocalizedStringKey) { self.text = text }
 
     var body: some View {
         Text(text)
@@ -38,7 +38,7 @@ struct SectionTitle: View {
 
 /// 带标签与数值的滑块，拖动期间合并为一次撤销。
 struct LabeledSlider: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var value: Double
     let range: ClosedRange<Double>
     var format: (Double) -> String = { String(format: "%.0f", $0 * 100) }
@@ -76,6 +76,9 @@ struct PanelButtonStyle: ButtonStyle {
 }
 
 extension View {
+    /// SF Symbols 的部分图标（如 textformat）在中文环境下会换成汉字版本，图标统一用拉丁字母版本。
+    func latinSymbol() -> some View { environment(\.locale, Locale(identifier: "en")) }
+
     func panelBackground() -> some View {
         background(Theme.panel).overlay(Rectangle().stroke(Theme.border, lineWidth: 1))
     }

@@ -10,12 +10,12 @@ enum LibraryTab: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .media: "素材"
-        case .audio: "音频"
-        case .title: "文字"
-        case .text: "字幕"
-        case .transition: "转场"
-        case .filter: "滤镜"
+        case .media: String(localized: "素材")
+        case .audio: String(localized: "音频")
+        case .title: String(localized: "文字")
+        case .text: String(localized: "字幕")
+        case .transition: String(localized: "转场")
+        case .filter: String(localized: "滤镜")
         }
     }
 
@@ -44,8 +44,8 @@ struct LibraryPanel: View {
                         tab = t
                     } label: {
                         VStack(spacing: 3) {
-                            Image(systemName: t.icon).font(.system(size: 15))
-                            Text(t.title).font(.system(size: 10))
+                            Image(systemName: t.icon).latinSymbol().font(.system(size: 15))
+                            Text(t.title).font(.system(size: 10)).lineLimit(1).minimumScaleFactor(0.7)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 7)
@@ -136,7 +136,7 @@ private struct AssetCard: View {
             if asset.hdr != nil {
                 HDRBadge(small: true).padding(4).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
-            Text(asset.kind == .image ? "照片" : asset.duration.displayString)
+            Text(asset.kind == .image ? String(localized: "照片") : asset.duration.displayString)
                 .font(.system(size: 9).monospacedDigit())
                 .padding(.horizontal, 4).padding(.vertical, 1)
                 .background(Color.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 3))
@@ -264,7 +264,7 @@ private struct TransitionTab: View {
                     ForEach(TransitionKind.allCases, id: \.self) { tile($0) }
                 }
             }
-            LabeledSlider(title: "时长", value: $duration, range: 0.2...2, format: { String(format: "%.1f 秒", $0) })
+            LabeledSlider(title: "时长", value: $duration, range: 0.2...2, format: { String(format: String(localized: "%.1f 秒"), $0) })
             Button {
                 model.store.perform { $0.applyTransitionToAll(FCCore.Transition(kind: currentKind ?? .dissolve, duration: Time(seconds: duration))) }
             } label: {
@@ -289,7 +289,7 @@ private struct TransitionTab: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Theme.raised, in: RoundedRectangle(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(selected ? Theme.accent : .clear, lineWidth: 2))
-                Text(kind?.displayName ?? "无").font(.system(size: 11))
+                Text(kind?.displayName ?? String(localized: "无")).font(.system(size: 11))
             }
             .foregroundStyle(targetClipID == nil ? Theme.tertiary : Theme.text)
         }
@@ -441,27 +441,27 @@ private struct FilterTab: View {
         alert.messageText = title
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
         field.stringValue = initial
-        field.placeholderString = "例如：海边清透、夜景电影感"
+        field.placeholderString = String(localized: "例如：海边清透、夜景电影感")
         alert.accessoryView = field
-        alert.addButton(withTitle: "保存")
-        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: String(localized: "保存"))
+        alert.addButton(withTitle: String(localized: "取消"))
         alert.window.initialFirstResponder = field
         return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }
 
     private func savePreset() {
-        guard let filter = clip?.filter, let name = askName(title: "保存调色预设", initial: "") else { return }
+        guard let filter = clip?.filter, let name = askName(title: String(localized: "保存调色预设"), initial: "") else { return }
         do {
             try GradePresets.store.save(name: name, filter: filter)
         } catch {
-            model.errorMessage = "预设保存失败：\(error.localizedDescription)"
+            model.errorMessage = String(localized: "预设保存失败：\(error.localizedDescription)")
         }
         presets = GradePresets.store.presets
         Task { await loadPreviews() }
     }
 
     private func renamePreset(_ preset: GradePreset) {
-        guard let name = askName(title: "重命名预设", initial: preset.name) else { return }
+        guard let name = askName(title: String(localized: "重命名预设"), initial: preset.name) else { return }
         try? GradePresets.store.rename(preset.id, to: name)
         presets = GradePresets.store.presets
     }
@@ -480,7 +480,7 @@ private struct FilterTab: View {
         }
         luts = UserLUTLibrary.shared.all
         if let last, clip != nil { apply { $0.selectLUT(last) } }
-        if !failed.isEmpty { model.errorMessage = "以下 LUT 无法导入：\n" + failed.joined(separator: "\n") }
+        if !failed.isEmpty { model.errorMessage = String(localized: "以下 LUT 无法导入：\n") + failed.joined(separator: "\n") }
         Task { await loadPreviews() }
     }
 

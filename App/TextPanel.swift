@@ -35,42 +35,42 @@ struct TextPreset: Identifiable {
         let today = Date().formatted(.dateTime.year().month(.twoDigits).day(.twoDigits)).replacingOccurrences(of: "/", with: ".")
         let yellow = RGBA(r: 1, g: 0.86, b: 0.2)
         return [
-            TextPreset(id: "plain", name: "默认文字", text: "输入文字",
+            TextPreset(id: "plain", name: String(localized: "默认文字"), text: String(localized: "输入文字"),
                        style: style("PingFangSC-Semibold", size: 0.07, strokeWidth: 0.08), animation: .fade),
-            TextPreset(id: "headline", name: "大标题", text: "我的周末",
+            TextPreset(id: "headline", name: String(localized: "大标题"), text: String(localized: "我的周末"),
                        style: style("PingFangSC-Semibold", size: 0.12, stroke: RGBA(r: 0, g: 0, b: 0, a: 0.6), strokeWidth: 0.06, y: 0.45),
                        animation: .rise),
-            TextPreset(id: "cinema", name: "电影片名", text: "片 名",
+            TextPreset(id: "cinema", name: String(localized: "电影片名"), text: String(localized: "片 名"),
                        style: style("STSongti-SC-Black", size: 0.09), animation: .fade, duration: Time(seconds: 4)),
-            TextPreset(id: "location", name: "地点", text: "📍 京都 · 岚山",
+            TextPreset(id: "location", name: String(localized: "地点"), text: String(localized: "📍 京都 · 岚山"),
                        style: style("PingFangSC-Semibold", size: 0.045, background: RGBA(r: 0, g: 0, b: 0, a: 0.45), x: 0.22, y: 0.88),
                        animation: .rise),
-            TextPreset(id: "date", name: "日期", text: today,
+            TextPreset(id: "date", name: String(localized: "日期"), text: today,
                        style: style("Futura-Bold", size: 0.05, strokeWidth: 0.1, x: 0.85, y: 0.1), animation: .typewriter),
-            TextPreset(id: "chapter", name: "章节", text: "Day 1",
+            TextPreset(id: "chapter", name: String(localized: "章节"), text: "Day 1",
                        style: style("AvenirNext-Heavy", size: 0.1, color: yellow, strokeWidth: 0.1), animation: .pop),
-            TextPreset(id: "script", name: "手写", text: "Hello, Autumn",
+            TextPreset(id: "script", name: String(localized: "手写"), text: "Hello, Autumn",
                        style: style("SnellRoundhand-Bold", size: 0.1, strokeWidth: 0.04), animation: .fade),
-            TextPreset(id: "ending", name: "片尾", text: "谢谢观看",
+            TextPreset(id: "ending", name: String(localized: "片尾"), text: String(localized: "谢谢观看"),
                        style: style("STKaitiSC-Black", size: 0.07), animation: .fade),
         ]
     }
 
     /// 文字可选字体（系统自带，不需要下载）。
     static let fonts: [(String, String)] = [
-        ("PingFangSC-Semibold", "苹方 粗"),
-        ("PingFangSC-Regular", "苹方 常规"),
-        ("STHeitiSC-Medium", "黑体"),
-        ("HiraginoSansGB-W6", "冬青黑体"),
-        ("STSongti-SC-Black", "宋体 特粗"),
-        ("STSongti-SC-Bold", "宋体 粗"),
-        ("STKaitiSC-Black", "楷体 特粗"),
-        ("STKaitiSC-Bold", "楷体"),
+        ("PingFangSC-Semibold", String(localized: "苹方 粗")),
+        ("PingFangSC-Regular", String(localized: "苹方 常规")),
+        ("STHeitiSC-Medium", String(localized: "黑体")),
+        ("HiraginoSansGB-W6", String(localized: "冬青黑体")),
+        ("STSongti-SC-Black", String(localized: "宋体 特粗")),
+        ("STSongti-SC-Bold", String(localized: "宋体 粗")),
+        ("STKaitiSC-Black", String(localized: "楷体 特粗")),
+        ("STKaitiSC-Bold", String(localized: "楷体")),
         ("AvenirNext-Heavy", "Avenir Next"),
         ("Futura-Bold", "Futura"),
-        ("HelveticaNeue-CondensedBlack", "Helvetica 窄体"),
-        ("Georgia-BoldItalic", "Georgia 斜体"),
-        ("SnellRoundhand-Bold", "手写体"),
+        ("HelveticaNeue-CondensedBlack", String(localized: "Helvetica 窄体")),
+        ("Georgia-BoldItalic", String(localized: "Georgia 斜体")),
+        ("SnellRoundhand-Bold", String(localized: "手写体")),
     ]
 }
 
@@ -165,7 +165,7 @@ struct TextInspector: View {
         }
         VStack(alignment: .leading, spacing: 10) {
             LabeledSlider(title: "时长", value: duration, range: 0.5...15,
-                          format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+                          format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
             Picker("动画", selection: model.textBinding(id, \.animation, default: .fade)) {
                 ForEach(TextAnimation.allCases, id: \.self) { Text($0.displayName).tag($0) }
             }

@@ -1,0 +1,26 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "FrameCut 工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FrameCut Project"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FrameCut uses the microphone to record voiceovers. Recordings stay in your project and are never uploaded."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

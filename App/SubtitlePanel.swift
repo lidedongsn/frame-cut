@@ -52,7 +52,7 @@ struct SubtitlePanel: View {
                 Button {
                     if model.project.subtitles.isEmpty { startTranscribe() } else { confirmReplace = true }
                 } label: {
-                    Label("识别字幕", systemImage: "waveform").frame(maxWidth: .infinity)
+                    Label("识别字幕", systemImage: "waveform").lineLimit(1).minimumScaleFactor(0.75).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(PanelButtonStyle(prominent: true))
                 .disabled(model.project.mainTrack.isEmpty || isRunning || !hasSource)
@@ -69,7 +69,7 @@ struct SubtitlePanel: View {
                 Button {
                     var newID: UUID?
                     let at = model.playhead
-                    model.store.perform { newID = $0.addSubtitle(at: at, text: "输入字幕") }
+                    model.store.perform { newID = $0.addSubtitle(at: at, text: String(localized: "输入字幕")) }
                     if let newID { model.selection = .subtitle(newID) }
                 } label: {
                     Label("添加", systemImage: "plus")
@@ -113,7 +113,7 @@ struct SubtitlePanel: View {
             Button {
                 model.showSubtitleStyle()
             } label: {
-                Label("字幕样式", systemImage: "textformat").frame(maxWidth: .infinity)
+                Label { Text("字幕样式") } icon: { Image(systemName: "textformat").latinSymbol() }.frame(maxWidth: .infinity)
             }
             .buttonStyle(PanelButtonStyle())
             .disabled(model.project.subtitles.isEmpty)
@@ -270,12 +270,12 @@ struct SubtitleStyleEditor: View {
     @Bindable var model: EditorModel
 
     private let fonts: [(String, String)] = [
-        ("PingFangSC-Semibold", "苹方 粗"),
-        ("PingFangSC-Regular", "苹方 常规"),
-        ("STHeitiSC-Medium", "黑体"),
-        ("STSongti-SC-Bold", "宋体 粗"),
-        ("STKaitiSC-Bold", "楷体"),
-        ("HiraginoSansGB-W6", "冬青黑体"),
+        ("PingFangSC-Semibold", String(localized: "苹方 粗")),
+        ("PingFangSC-Regular", String(localized: "苹方 常规")),
+        ("STHeitiSC-Medium", String(localized: "黑体")),
+        ("STSongti-SC-Bold", String(localized: "宋体 粗")),
+        ("STKaitiSC-Bold", String(localized: "楷体")),
+        ("HiraginoSansGB-W6", String(localized: "冬青黑体")),
     ]
 
     private func style<T>(_ kp: WritableKeyPath<SubtitleStyle, T>) -> Binding<T> {
@@ -318,7 +318,7 @@ struct SubtitleStyleEditor: View {
         }
     }
 
-    private func preset(_ name: String, text: RGBA, stroke: RGBA, bg: RGBA, strokeWidth: Double = 0.12) -> some View {
+    private func preset(_ name: LocalizedStringKey, text: RGBA, stroke: RGBA, bg: RGBA, strokeWidth: Double = 0.12) -> some View {
         Button(name) {
             model.store.perform {
                 $0.subtitleStyle.textColor = text

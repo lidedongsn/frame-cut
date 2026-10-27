@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+  developmentLanguage: zh-Hans
 packages:
   FrameCutKit:
     path: Packages/FrameCutKit
@@ -15,6 +16,9 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
+    # 界面文字由编译器收集到 String Catalog（App/Localizable.xcstrings）
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 targets:
   FrameCut:
     type: application

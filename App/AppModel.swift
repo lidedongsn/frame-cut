@@ -17,8 +17,8 @@ final class AppModel {
 
     func newProject() {
         let panel = NSSavePanel()
-        panel.title = "新建工程"
-        panel.nameFieldStringValue = "未命名工程"
+        panel.title = String(localized: "新建工程")
+        panel.nameFieldStringValue = String(localized: "未命名工程")
         panel.allowedContentTypes = [Self.projectType]
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -28,13 +28,13 @@ final class AppModel {
             try ProjectFile.write(Project(name: packageURL.deletingPathExtension().lastPathComponent), to: packageURL)
             open(url: packageURL)
         } catch {
-            alert = "无法创建工程：\(error.localizedDescription)"
+            alert = String(localized: "无法创建工程：\(error.localizedDescription)")
         }
     }
 
     func openPanel() {
         let panel = NSOpenPanel()
-        panel.title = "打开工程"
+        panel.title = String(localized: "打开工程")
         panel.allowedContentTypes = [Self.projectType]
         panel.treatsFilePackagesAsDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -52,7 +52,7 @@ final class AppModel {
             RecentProjects().add(url)
             recent = RecentProjects().list()
         } catch {
-            alert = "无法打开工程：\(error.localizedDescription)"
+            alert = String(localized: "无法打开工程：\(error.localizedDescription)")
             Log.project.error("无法打开工程：\(error.localizedDescription, privacy: .public)")
             RecentProjects().remove(url)
             recent = RecentProjects().list()

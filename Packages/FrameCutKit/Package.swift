@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "FrameCutKit",
+    defaultLocalization: "zh-Hans",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "FCCore", targets: ["FCCore"]),
@@ -14,15 +15,15 @@ let package = Package(
         .package(url: "https://github.com/argmaxinc/WhisperKit.git", from: "1.1.0"),
     ],
     targets: [
-        .target(name: "FCCore"),
-        .target(name: "FCMedia", dependencies: ["FCCore"]),
+        .target(name: "FCCore", resources: [.process("Localizable.xcstrings")]),
+        .target(name: "FCMedia", dependencies: ["FCCore"], resources: [.process("Localizable.xcstrings")]),
         // 渲染引擎在调试构建中也开优化：逐像素生成 LUT 等计算在 -Onone 下慢 10 倍以上，拖动调色滑块会卡
-        .target(name: "FCEngine", dependencies: ["FCCore"],
+        .target(name: "FCEngine", dependencies: ["FCCore"], resources: [.process("Localizable.xcstrings")],
                 swiftSettings: [.unsafeFlags(["-O"], .when(configuration: .debug))]),
         .target(name: "FCTranscribe", dependencies: [
             "FCCore",
             .product(name: "WhisperKit", package: "WhisperKit"),
-        ]),
+        ], resources: [.process("Localizable.xcstrings")]),
         .testTarget(name: "FCCoreTests", dependencies: ["FCCore"]),
         .testTarget(name: "FCEngineTests", dependencies: ["FCCore", "FCMedia", "FCEngine"]),
         .testTarget(name: "FCTranscribeTests", dependencies: ["FCCore", "FCEngine", "FCTranscribe"]),

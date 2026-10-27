@@ -96,7 +96,7 @@ public enum HDRFormat: String, Codable, Sendable {
         switch self {
         case .hlg: "HLG"
         case .pq: "HDR10"
-        case .dolbyVision, .dolbyVisionPQ: "杜比视界"
+        case .dolbyVision, .dolbyVisionPQ: String(localized: "杜比视界", bundle: .module)
         }
     }
 
@@ -162,16 +162,16 @@ public enum FilterPreset: String, Codable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .none: "原画"
-        case .fresh: "清新"
-        case .warm: "暖阳"
-        case .film: "胶片"
-        case .mono: "黑白"
-        case .vintage: "复古"
-        case .cool: "冷调"
-        case .vivid: "鲜艳"
-        case .fade: "褪色"
-        case .cinematic: "电影"
+        case .none: String(localized: "原画", bundle: .module)
+        case .fresh: String(localized: "清新", bundle: .module)
+        case .warm: String(localized: "暖阳", bundle: .module)
+        case .film: String(localized: "胶片", bundle: .module)
+        case .mono: String(localized: "黑白", bundle: .module)
+        case .vintage: String(localized: "复古", bundle: .module)
+        case .cool: String(localized: "冷调", bundle: .module)
+        case .vivid: String(localized: "鲜艳", bundle: .module)
+        case .fade: String(localized: "褪色", bundle: .module)
+        case .cinematic: String(localized: "电影", bundle: .module)
         }
     }
 }
@@ -182,14 +182,14 @@ public enum HSLBand: String, Codable, CaseIterable, Sendable, CodingKeyRepresent
 
     public var displayName: String {
         switch self {
-        case .red: "红"
-        case .orange: "橙"
-        case .yellow: "黄"
-        case .green: "绿"
-        case .cyan: "青"
-        case .blue: "蓝"
-        case .purple: "紫"
-        case .magenta: "洋红"
+        case .red: String(localized: "红", bundle: .module)
+        case .orange: String(localized: "橙", bundle: .module)
+        case .yellow: String(localized: "黄", bundle: .module)
+        case .green: String(localized: "绿", bundle: .module)
+        case .cyan: String(localized: "青", bundle: .module)
+        case .blue: String(localized: "蓝", bundle: .module)
+        case .purple: String(localized: "紫", bundle: .module)
+        case .magenta: String(localized: "洋红", bundle: .module)
         }
     }
 
@@ -340,17 +340,17 @@ public enum TransitionKind: String, Codable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .dissolve: "叠化"
-        case .fadeBlack: "闪黑"
-        case .fadeWhite: "闪白"
-        case .pushLeft: "向左推"
-        case .pushRight: "向右推"
-        case .pushUp: "向上推"
-        case .pushDown: "向下推"
-        case .slideLeft: "滑入"
-        case .wipeLeft: "擦除"
-        case .zoom: "放大"
-        case .blur: "模糊"
+        case .dissolve: String(localized: "叠化", bundle: .module)
+        case .fadeBlack: String(localized: "闪黑", bundle: .module)
+        case .fadeWhite: String(localized: "闪白", bundle: .module)
+        case .pushLeft: String(localized: "向左推", bundle: .module)
+        case .pushRight: String(localized: "向右推", bundle: .module)
+        case .pushUp: String(localized: "向上推", bundle: .module)
+        case .pushDown: String(localized: "向下推", bundle: .module)
+        case .slideLeft: String(localized: "滑入", bundle: .module)
+        case .wipeLeft: String(localized: "擦除", bundle: .module)
+        case .zoom: String(localized: "放大", bundle: .module)
+        case .blur: String(localized: "模糊", bundle: .module)
         }
     }
 }

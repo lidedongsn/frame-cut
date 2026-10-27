@@ -548,7 +548,7 @@ private struct TransitionMarker: View {
         }
         .buttonStyle(.plain)
         .zIndex(20)
-        .help(placement.transitionIn.map { "转场：\($0.kind.displayName)" } ?? "添加转场")
+        .help(placement.transitionIn.map { String(localized: "转场：\($0.kind.displayName)") } ?? String(localized: "添加转场"))
     }
 }
 
@@ -755,7 +755,7 @@ private struct TextClipView: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "textformat").font(.system(size: 9))
+            Image(systemName: "textformat").latinSymbol().font(.system(size: 9))
             Text(clip.text).font(.system(size: 10)).lineLimit(1)
         }
         .padding(.horizontal, 5)

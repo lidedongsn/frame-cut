@@ -17,7 +17,7 @@ public struct TranscriptSegment: Equatable, Sendable {
 public enum TranscribeError: LocalizedError {
     case downloadFailed
 
-    public var errorDescription: String? { "识别模型下载失败，请检查网络后重试" }
+    public var errorDescription: String? { String(localized: "识别模型下载失败，请检查网络后重试", bundle: .module) }
 }
 
 public enum TranscribeProgress: Sendable {
@@ -34,9 +34,9 @@ public enum TranscribeLanguage: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .chinese: "中文"
-        case .english: "英文"
-        case .auto: "自动"
+        case .chinese: String(localized: "中文", bundle: .module)
+        case .english: String(localized: "英文", bundle: .module)
+        case .auto: String(localized: "自动", bundle: .module)
         }
     }
 

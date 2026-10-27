@@ -8,11 +8,11 @@ public enum TextAnimation: String, Codable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .none: "无"
-        case .fade: "淡入淡出"
-        case .rise: "上浮"
-        case .pop: "弹出"
-        case .typewriter: "打字机"
+        case .none: String(localized: "无", bundle: .module)
+        case .fade: String(localized: "淡入淡出", bundle: .module)
+        case .rise: String(localized: "上浮", bundle: .module)
+        case .pop: String(localized: "弹出", bundle: .module)
+        case .typewriter: String(localized: "打字机", bundle: .module)
         }
     }
 }

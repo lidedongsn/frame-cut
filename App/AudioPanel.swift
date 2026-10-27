@@ -47,7 +47,7 @@ struct DuckingSection: View {
             LabeledSlider(title: "调低到", value: duck(\.level), range: DuckSettings.levelRange,
                           format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
             LabeledSlider(title: "渐变", value: duck(\.fade), range: DuckSettings.fadeRange,
-                          format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+                          format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
             Text(model.project.duckRanges.isEmpty
                  ? "还没有人声区间。可以按字幕或声音生成，再在时间线「人声」行里拖动调整；也可以手动添加。"
                  : "共 \(model.project.duckRanges.count) 个人声区间，在时间线「人声」行里拖动、拖两端调整，右键删除。")
@@ -124,7 +124,7 @@ struct RecordingBadge: View {
             let seconds = Int(context.date.timeIntervalSince(began))
             HStack(spacing: 6) {
                 Circle().fill(Color.red).frame(width: 8, height: 8)
-                Text(String(format: "正在录音 %02d:%02d · 按空格停止", seconds / 60, seconds % 60))
+                Text(String(format: String(localized: "正在录音 %02d:%02d · 按空格停止"), seconds / 60, seconds % 60))
                     .font(.system(size: 11, weight: .semibold).monospacedDigit())
             }
             .padding(.horizontal, 10).padding(.vertical, 4)

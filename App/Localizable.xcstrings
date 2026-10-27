@@ -1,0 +1,3350 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "" : {
+      "shouldTranslate" : false
+    },
+    "%.1f 秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%.1f s"
+          }
+        }
+      }
+    },
+    "%@ / %@" : {
+      "shouldTranslate" : false
+    },
+    "%@ – %@" : {
+      "shouldTranslate" : false
+    },
+    "%@（正在调整）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (adjusting)"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld fps" : {
+      "shouldTranslate" : false
+    },
+    "%lld°" : {
+      "shouldTranslate" : false
+    },
+    "1080p" : {
+      "shouldTranslate" : false
+    },
+    "4K" : {
+      "shouldTranslate" : false
+    },
+    "720p" : {
+      "shouldTranslate" : false
+    },
+    "FrameCut" : {
+      "shouldTranslate" : false
+    },
+    "FrameCut 没有麦克风权限。请在「系统设置 → 隐私与安全性 → 麦克风」里允许 FrameCut。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FrameCut doesn’t have microphone access. Allow it in System Settings → Privacy & Security → Microphone."
+          }
+        }
+      }
+    },
+    "Georgia 斜体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Georgia Italic"
+          }
+        }
+      }
+    },
+    "HDR" : {
+      "shouldTranslate" : false
+    },
+    "HDR 素材会自动做色调映射，高光平滑压缩而不过曝。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR footage is tone-mapped automatically, so highlights roll off smoothly instead of clipping."
+          }
+        }
+      }
+    },
+    "HDR10（PQ）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR10 (PQ)"
+          }
+        }
+      }
+    },
+    "HDR10：适合电视和专业平台，带 1000 尼特 HDR10 元数据。普通屏幕上依赖播放器做色调映射。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR10: for TVs and professional platforms, with 1000-nit HDR10 metadata. On SDR screens it relies on the player for tone mapping."
+          }
+        }
+      }
+    },
+    "HDR（HLG，推荐）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR (HLG, recommended)"
+          }
+        }
+      }
+    },
+    "HSL 分色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HSL"
+          }
+        }
+      }
+    },
+    "Helvetica 窄体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Helvetica Condensed"
+          }
+        }
+      }
+    },
+    "SDR" : {
+      "shouldTranslate" : false
+    },
+    "SDR（自动色调映射）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SDR (auto tone mapping)"
+          }
+        }
+      }
+    },
+    "、" : {
+      "comment" : "列表分隔符",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", "
+          }
+        }
+      }
+    },
+    "。可在右侧工程设置中修改。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ". You can change this in Project Settings on the right."
+          }
+        }
+      }
+    },
+    "上一帧 ←" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Frame ←"
+          }
+        }
+      }
+    },
+    "上下位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertical Position"
+          }
+        }
+      }
+    },
+    "下一帧 →" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Frame →"
+          }
+        }
+      }
+    },
+    "与下一条合并" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merge with Next"
+          }
+        }
+      }
+    },
+    "主轨视频没有声音，无法识别" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The main track video has no sound to transcribe"
+          }
+        }
+      }
+    },
+    "也可以在预览画面里直接拖动字幕调整位置，拖右下角调整大小。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can also drag captions in the preview to move them, and drag the bottom-right corner to resize."
+          }
+        }
+      }
+    },
+    "也可以在预览画面里直接拖动文字调整位置，拖右下角调整大小。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can also drag text in the preview to move it, and drag the bottom-right corner to resize."
+          }
+        }
+      }
+    },
+    "亮度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brightness"
+          }
+        }
+      }
+    },
+    "人声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech"
+          }
+        }
+      }
+    },
+    "人声区间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech Range"
+          }
+        }
+      }
+    },
+    "人声区间：开启了避让的音频在这里调低" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech range: audio with ducking turned on is lowered here"
+          }
+        }
+      }
+    },
+    "人声避让" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ducking"
+          }
+        }
+      }
+    },
+    "从 LUT 库删除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from LUT Library"
+          }
+        }
+      }
+    },
+    "从播放头开始边放画面边录音，录好后自动放到音频轨上；按空格停止。录音时画面静音。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Records from the playhead while the video plays, then places the recording on an audio track. Press Space to stop. The timeline is muted while recording."
+          }
+        }
+      }
+    },
+    "从最近项目中移除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Recent Projects"
+          }
+        }
+      }
+    },
+    "从素材库删除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete from Library"
+          }
+        }
+      }
+    },
+    "以下 LUT 无法导入：\n" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These LUTs couldn’t be imported:\n"
+          }
+        }
+      }
+    },
+    "以下文件无法导入：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These files couldn’t be imported: %@"
+          }
+        }
+      }
+    },
+    "例如：海边清透、夜景电影感" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e.g. Bright Beach, Cinematic Night"
+          }
+        }
+      }
+    },
+    "保存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        }
+      }
+    },
+    "保存失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save: %@"
+          }
+        }
+      }
+    },
+    "保存当前调色…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Current Grade…"
+          }
+        }
+      }
+    },
+    "保存调色预设" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Grade Preset"
+          }
+        }
+      }
+    },
+    "保留 HDR 素材的高光与色彩，可导出 HDR（HLG / HDR10）或 SDR。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeps the highlights and color of HDR footage. Export as HDR (HLG / HDR10) or SDR."
+          }
+        }
+      }
+    },
+    "停止录音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Recording"
+          }
+        }
+      }
+    },
+    "先在时间线上选中一个片段" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select a clip on the timeline first"
+          }
+        }
+      }
+    },
+    "先添加视频或照片，再给画面加文字。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a video or photo first, then add text to it."
+          }
+        }
+      }
+    },
+    "免费、本地、无水印的 vlog 剪辑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free, local vlog editing with no watermark"
+          }
+        }
+      }
+    },
+    "共 %lld 个人声区间，在时间线「人声」行里拖动、拖两端调整，右键删除。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld speech range. Drag it or its edges in the Speech row on the timeline; right-click to delete."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld speech ranges. Drag them or their edges in the Speech row on the timeline; right-click to delete."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "共 %lld 条 · 点击时间跳转，右键分割 / 合并 / 删除" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld caption · Click a time to jump; right-click to split, merge or delete"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld captions · Click a time to jump; right-click to split, merge or delete"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "关闭" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
+    "关闭工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Project"
+          }
+        }
+      }
+    },
+    "兼容性最好的 HDR 格式：iPhone、抖音、B 站、YouTube 都支持，在普通屏幕上也能正常显示。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The most compatible HDR format: supported by iPhone, YouTube, Douyin and Bilibili, and still looks right on SDR screens."
+          }
+        }
+      }
+    },
+    "冬青黑体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiragino Sans GB"
+          }
+        }
+      }
+    },
+    "分割" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split"
+          }
+        }
+      }
+    },
+    "分离音频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detach Audio"
+          }
+        }
+      }
+    },
+    "分辨率" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolution"
+          }
+        }
+      }
+    },
+    "删除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        }
+      }
+    },
+    "删除“%@”？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete “%@”?"
+          }
+        }
+      }
+    },
+    "删除全部字幕（可撤销）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete all captions (can be undone)"
+          }
+        }
+      }
+    },
+    "删除所选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Selection"
+          }
+        }
+      }
+    },
+    "删除语音模型？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the speech model?"
+          }
+        }
+      }
+    },
+    "删除这个区间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete This Range"
+          }
+        }
+      }
+    },
+    "删除这条字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete This Caption"
+          }
+        }
+      }
+    },
+    "删除预设" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Preset"
+          }
+        }
+      }
+    },
+    "剪辑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clip"
+          }
+        }
+      }
+    },
+    "动态范围" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dynamic Range"
+          }
+        }
+      }
+    },
+    "动画" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animation"
+          }
+        }
+      }
+    },
+    "动画：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animation: %@"
+          }
+        }
+      }
+    },
+    "原图" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
+          }
+        }
+      }
+    },
+    "原声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original Audio"
+          }
+        }
+      }
+    },
+    "原声已静音或已分离。要重新分离，先取消静音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The original audio is muted or already detached. Unmute it to detach again."
+          }
+        }
+      }
+    },
+    "双击修改文字，拖动调整位置，拖右下角或双指捏合调整大小" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double-click to edit, drag to move, drag the bottom-right corner or pinch to resize"
+          }
+        }
+      }
+    },
+    "双击修改这条字幕；拖动调整位置，拖右下角或双指捏合调整大小（对全部字幕生效）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double-click to edit this caption. Drag to move, drag the bottom-right corner or pinch to resize (applies to all captions)"
+          }
+        }
+      }
+    },
+    "取消" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "取消导出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel Export"
+          }
+        }
+      }
+    },
+    "取消整条轨静音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unmute Track"
+          }
+        }
+      }
+    },
+    "取消静音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unmute"
+          }
+        }
+      }
+    },
+    "变速" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed"
+          }
+        }
+      }
+    },
+    "变速的片段不能分离音频，先把速度调回 1x" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can’t detach audio from a clip with changed speed. Set the speed back to 1x first."
+          }
+        }
+      }
+    },
+    "只清除列表记录，工程文件不会被删除。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the list is cleared. Project files are not deleted."
+          }
+        }
+      }
+    },
+    "可以用 ⌘Z 撤销。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can undo with ⌘Z."
+          }
+        }
+      }
+    },
+    "同时导出 .srt 字幕文件（与视频同名）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Also export an .srt caption file (same name as the video)"
+          }
+        }
+      }
+    },
+    "回车完成，⌥回车换行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to finish, ⌥Return for a new line"
+          }
+        }
+      }
+    },
+    "在 Finder 中显示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        }
+      }
+    },
+    "在右侧调整字体、字号、颜色和位置（对全部字幕生效）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust font, size, color and position on the right (applies to all captions)"
+          }
+        }
+      }
+    },
+    "在播放头位置添加一条字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a caption at the playhead"
+          }
+        }
+      }
+    },
+    "在播放头处分割" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split at Playhead"
+          }
+        }
+      }
+    },
+    "在播放头处添加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add at Playhead"
+          }
+        }
+      }
+    },
+    "在时间线上左右拖动调整位置，上下拖动换到其他音频轨；拖动两端可裁剪，⌘B 在播放头处分割。配乐、旁白、音效可以放在不同的轨上同时播放。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag left or right on the timeline to move, up or down to change audio tracks. Drag the edges to trim; ⌘B splits at the playhead. Music, voiceover and sound effects can play together on separate tracks."
+          }
+        }
+      }
+    },
+    "在时间线上点击两个片段之间的 ◇ 选择位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click the ◇ between two clips on the timeline to choose where"
+          }
+        }
+      }
+    },
+    "在访达中显示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        }
+      }
+    },
+    "在这段时间里，开启了「有人声时调低」的音频会自动调低。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "During this range, audio with “Lower During Speech” turned on is lowered automatically."
+          }
+        }
+      }
+    },
+    "地点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location"
+          }
+        }
+      }
+    },
+    "垂直位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertical Position"
+          }
+        }
+      }
+    },
+    "基础" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basics"
+          }
+        }
+      }
+    },
+    "复制一份" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duplicate"
+          }
+        }
+      }
+    },
+    "复制调色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Grade"
+          }
+        }
+      }
+    },
+    "大标题" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Headline"
+          }
+        }
+      }
+    },
+    "好" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "字体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Font"
+          }
+        }
+      }
+    },
+    "字号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size"
+          }
+        }
+      }
+    },
+    "字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captions"
+          }
+        }
+      }
+    },
+    "字幕内容" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caption Text"
+          }
+        }
+      }
+    },
+    "字幕样式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caption Style"
+          }
+        }
+      }
+    },
+    "字幕画进视频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Burn Captions into Video"
+          }
+        }
+      }
+    },
+    "字幕跟随视频剪辑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captions Follow Video Edits"
+          }
+        }
+      }
+    },
+    "宋体 特粗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songti Black"
+          }
+        }
+      }
+    },
+    "宋体 粗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songti Bold"
+          }
+        }
+      }
+    },
+    "完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "对比" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compare"
+          }
+        }
+      }
+    },
+    "对比度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contrast"
+          }
+        }
+      }
+    },
+    "导入 .cube…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import .cube…"
+          }
+        }
+      }
+    },
+    "导入 / 导出 SRT 字幕，字幕是否跟随视频剪辑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import or export SRT captions, and choose whether captions follow video edits"
+          }
+        }
+      }
+    },
+    "导入 SRT 字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import SRT Captions"
+          }
+        }
+      }
+    },
+    "导入 SRT…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import SRT…"
+          }
+        }
+      }
+    },
+    "导入本地音频文件（mp3 / m4a / wav）\n作为配乐、旁白或音效\n时间重叠的音频会自动放到新的音频轨" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import audio files (mp3 / m4a / wav)\nfor music, voiceover or sound effects.\nOverlapping audio goes to a new track automatically."
+          }
+        }
+      }
+    },
+    "导入相机厂商或网上下载的 .cube 调色文件，所有工程通用。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import .cube LUTs from your camera maker or the web. They’re available in every project."
+          }
+        }
+      }
+    },
+    "导入素材" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Media"
+          }
+        }
+      }
+    },
+    "导入素材…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Media…"
+          }
+        }
+      }
+    },
+    "导入视频或照片，\n也可以直接拖到窗口里" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import videos or photos,\nor drag them into the window"
+          }
+        }
+      }
+    },
+    "导入音频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Audio"
+          }
+        }
+      }
+    },
+    "导出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        }
+      }
+    },
+    "导出 SRT 字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export SRT Captions"
+          }
+        }
+      }
+    },
+    "导出 SRT…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export SRT…"
+          }
+        }
+      }
+    },
+    "导出…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export…"
+          }
+        }
+      }
+    },
+    "导出完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Complete"
+          }
+        }
+      }
+    },
+    "导出视频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Video"
+          }
+        }
+      }
+    },
+    "居中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Center"
+          }
+        }
+      }
+    },
+    "工程设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project Settings"
+          }
+        }
+      }
+    },
+    "左右位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horizontal Position"
+          }
+        }
+      }
+    },
+    "已复制调色。选中其他片段后按 ⌥⌘V 粘贴。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grade copied. Select other clips and press ⌥⌘V to paste."
+          }
+        }
+      }
+    },
+    "已导入 %lld 条字幕。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld caption."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Imported %lld captions."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "已导出 %lld 条字幕。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exported %lld caption."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Exported %lld captions."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "已录制 %@ 的旁白，放在音频轨上。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorded %@ of voiceover and placed it on an audio track."
+          }
+        }
+      }
+    },
+    "已按素材自动选择，一般直接导出即可。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chosen automatically from your footage. Usually you can just export."
+          }
+        }
+      }
+    },
+    "已按素材设置画面为 %@ · %lld fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set the frame to %@ · %lld fps to match your footage"
+          }
+        }
+      }
+    },
+    "已有同名字幕文件，新的字幕保存为「%@」。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A caption file with that name already exists, so the new captions were saved as “%@”."
+          }
+        }
+      }
+    },
+    "已自动保存 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autosaved %@"
+          }
+        }
+      }
+    },
+    "帧率" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame Rate"
+          }
+        }
+      }
+    },
+    "帧率（fps）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame Rate (fps)"
+          }
+        }
+      }
+    },
+    "应用到全部交界" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply to All Cuts"
+          }
+        }
+      }
+    },
+    "应用到全部片段" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply to All Clips"
+          }
+        }
+      }
+    },
+    "应用到全部（%@）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply to All (%@)"
+          }
+        }
+      }
+    },
+    "开始创作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Creating"
+          }
+        }
+      }
+    },
+    "强度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensity"
+          }
+        }
+      }
+    },
+    "当前屏幕不支持 HDR，预览会自动压缩亮度，导出不受影响。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This display doesn’t support HDR, so the preview is tone-mapped. Exports are not affected."
+          }
+        }
+      }
+    },
+    "当前屏幕支持 HDR 预览。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This display supports HDR preview."
+          }
+        }
+      }
+    },
+    "录制旁白" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record Voiceover"
+          }
+        }
+      }
+    },
+    "录音没有保存成功：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The recording couldn’t be saved: %@"
+          }
+        }
+      }
+    },
+    "总时长 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration %@"
+          }
+        }
+      }
+    },
+    "恢复推荐设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Recommended Settings"
+          }
+        }
+      }
+    },
+    "我的 LUT" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My LUTs"
+          }
+        }
+      }
+    },
+    "我的周末" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Weekend"
+          }
+        }
+      }
+    },
+    "我的预设" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Presets"
+          }
+        }
+      }
+    },
+    "所选的声音来源里没有声音，无法识别" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected sources have no sound to transcribe"
+          }
+        }
+      }
+    },
+    "手写" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Script"
+          }
+        }
+      }
+    },
+    "手写体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Script"
+          }
+        }
+      }
+    },
+    "打开" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
+    "打开工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Project"
+          }
+        }
+      }
+    },
+    "打开工程…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Project…"
+          }
+        }
+      }
+    },
+    "把原声放到音频轨上单独剪辑、调节，原片段静音。之后移动或修剪画面，音频不会跟着变。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves the original audio to an audio track so you can edit it on its own, and mutes the clip. Moving or trimming the video afterwards won’t change the audio."
+          }
+        }
+      }
+    },
+    "把所选片段的风格、调节、HSL 和效果存为预设，所有工程通用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the selected clip’s look, adjustments, HSL and effects as a preset for every project"
+          }
+        }
+      }
+    },
+    "把素材拖到这里，或在左侧素材库双击添加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag media here, or double-click it in the library on the left"
+          }
+        }
+      }
+    },
+    "把视频或照片拖进来开始剪辑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag in videos or photos to start editing"
+          }
+        }
+      }
+    },
+    "按住查看调色前的原图" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold to see the original before grading"
+          }
+        }
+      }
+    },
+    "按声音检测" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detect from Audio"
+          }
+        }
+      }
+    },
+    "按声音生成了 %lld 个人声区间，可在时间线上拖动调整；⌘Z 撤销。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Created %lld speech range from the audio. Drag it on the timeline to adjust; ⌘Z to undo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Created %lld speech ranges from the audio. Drag them on the timeline to adjust; ⌘Z to undo."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "按字幕生成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Captions"
+          }
+        }
+      }
+    },
+    "按字幕生成了 %lld 个人声区间，可在时间线上拖动调整；⌘Z 撤销。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Created %lld speech range from captions. Drag it on the timeline to adjust; ⌘Z to undo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Created %lld speech ranges from captions. Drag them on the timeline to adjust; ⌘Z to undo."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "描边" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outline"
+          }
+        }
+      }
+    },
+    "描边粗细" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outline Width"
+          }
+        }
+      }
+    },
+    "提示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
+        }
+      }
+    },
+    "提示：在时间线上点选片段、音频、文字、字幕或转场，可在这里调整它们的属性。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tip: select a clip, audio, text, caption or transition on the timeline to adjust it here."
+          }
+        }
+      }
+    },
+    "撤销" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        }
+      }
+    },
+    "播放" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        }
+      }
+    },
+    "播放 / 暂停（空格）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play / Pause (Space)"
+          }
+        }
+      }
+    },
+    "放大时间线" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom In Timeline"
+          }
+        }
+      }
+    },
+    "效果" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effects"
+          }
+        }
+      }
+    },
+    "整条轨静音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute Track"
+          }
+        }
+      }
+    },
+    "文字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "文字内容" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        }
+      }
+    },
+    "新建工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Project"
+          }
+        }
+      }
+    },
+    "新建工程…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Project…"
+          }
+        }
+      }
+    },
+    "旁白 %@.m4a" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voiceover %@.m4a"
+          }
+        }
+      }
+    },
+    "旋转" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate"
+          }
+        }
+      }
+    },
+    "无" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        }
+      }
+    },
+    "无法写入字幕文件：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t write the caption file: %@"
+          }
+        }
+      }
+    },
+    "无法创建工程：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t create the project: %@"
+          }
+        }
+      }
+    },
+    "无法开始录音：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t start recording: %@"
+          }
+        }
+      }
+    },
+    "无法打开工程：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t open the project: %@"
+          }
+        }
+      }
+    },
+    "无法读取字幕文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t read the caption file"
+          }
+        }
+      }
+    },
+    "日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        }
+      }
+    },
+    "时长" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration"
+          }
+        }
+      }
+    },
+    "时间线上用到这个素材的片段也会一起删除。可以用 ⌘Z 撤销。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clips on the timeline that use it will be deleted too. You can undo with ⌘Z."
+          }
+        }
+      }
+    },
+    "时间线上还没有音频轨" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no audio tracks on the timeline yet"
+          }
+        }
+      }
+    },
+    "时间线适应窗口" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit Timeline to Window"
+          }
+        }
+      }
+    },
+    "显示时长" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration"
+          }
+        }
+      }
+    },
+    "普通视频。导入 HDR 素材（如 iPhone 拍摄）时会自动切换为 HDR。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard video. Switches to HDR automatically when you import HDR footage (such as from an iPhone)."
+          }
+        }
+      }
+    },
+    "暗角" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vignette"
+          }
+        }
+      }
+    },
+    "替换现有字幕？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace existing captions?"
+          }
+        }
+      }
+    },
+    "最近项目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent Projects"
+          }
+        }
+      }
+    },
+    "有人声时不调低" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don’t Lower During Speech"
+          }
+        }
+      }
+    },
+    "有人声时调低" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lower During Speech"
+          }
+        }
+      }
+    },
+    "有人声时调低这段音频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lower this audio during speech"
+          }
+        }
+      }
+    },
+    "有素材找不到了" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some media is missing"
+          }
+        }
+      }
+    },
+    "未命名工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled Project"
+          }
+        }
+      }
+    },
+    "样式（全部字幕）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style (All Captions)"
+          }
+        }
+      }
+    },
+    "检测人声失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t detect speech: %@"
+          }
+        }
+      }
+    },
+    "检测到 HDR 素材，工程已切换为 HDR，预览与导出保留高光细节" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR footage detected. The project switched to HDR, so the preview and export keep highlight detail"
+          }
+        }
+      }
+    },
+    "检测视频原声和未开启避让的音频（如旁白）里的说话声。风声、音乐也可能被当成人声，生成后请检查。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detects speech in the original audio and in audio without ducking (such as voiceover). Wind or music may be mistaken for speech, so check the result."
+          }
+        }
+      }
+    },
+    "楷体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaiti"
+          }
+        }
+      }
+    },
+    "楷体 特粗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaiti Black"
+          }
+        }
+      }
+    },
+    "正在加载模型…（首次加载需要一两分钟）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading the model… (the first time takes a minute or two)"
+          }
+        }
+      }
+    },
+    "正在导入…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing…"
+          }
+        }
+      }
+    },
+    "正在导出… %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exporting… %lld%%"
+          }
+        }
+      }
+    },
+    "正在录音 %02d:%02d · 按空格停止" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording %02d:%02d · Press Space to stop"
+          }
+        }
+      }
+    },
+    "正在提取音频…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extracting audio…"
+          }
+        }
+      }
+    },
+    "正在识别…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribing…"
+          }
+        }
+      }
+    },
+    "水平位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horizontal Position"
+          }
+        }
+      }
+    },
+    "没有在文件里找到 SRT 字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No SRT captions found in the file"
+          }
+        }
+      }
+    },
+    "没有字幕，先识别字幕或手动添加人声区间。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no captions. Transcribe captions first, or add speech ranges by hand."
+          }
+        }
+      }
+    },
+    "没有检测到人声，可以手动添加人声区间。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No speech detected. You can add speech ranges by hand."
+          }
+        }
+      }
+    },
+    "没有识别到语音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No speech recognized"
+          }
+        }
+      }
+    },
+    "淡入" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fade In"
+          }
+        }
+      }
+    },
+    "淡出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fade Out"
+          }
+        }
+      }
+    },
+    "添加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "添加到播放头位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add at Playhead"
+          }
+        }
+      }
+    },
+    "添加到时间线末尾" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to End of Timeline"
+          }
+        }
+      }
+    },
+    "添加转场" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Transition"
+          }
+        }
+      }
+    },
+    "清空" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        }
+      }
+    },
+    "清空全部 %lld 条字幕？" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Clear %lld caption?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Clear all %lld captions?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "清空全部字幕…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear All Captions…"
+          }
+        }
+      }
+    },
+    "清空最近项目记录，不会删除工程文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the recent projects list. Project files are not deleted"
+          }
+        }
+      }
+    },
+    "清空最近项目？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear recent projects?"
+          }
+        }
+      }
+    },
+    "渐变" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fade Time"
+          }
+        }
+      }
+    },
+    "滤镜" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filters"
+          }
+        }
+      }
+    },
+    "点一下添加到播放头位置。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to add at the playhead."
+          }
+        }
+      }
+    },
+    "点击应用到所选位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to apply at the selected cut"
+          }
+        }
+      }
+    },
+    "点击应用到所选片段" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to apply to the selected clip"
+          }
+        }
+      }
+    },
+    "照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        }
+      }
+    },
+    "片 名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TITLE"
+          }
+        }
+      }
+    },
+    "片尾" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ending"
+          }
+        }
+      }
+    },
+    "片段 %lld · 音频 %lld · 文字 %lld · 字幕 %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clips %lld · Audio %lld · Text %lld · Captions %lld"
+          }
+        }
+      }
+    },
+    "片段较短，实际转场时长为 %@ 秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The clips are short, so the transition lasts %@ s"
+          }
+        }
+      }
+    },
+    "用字幕的时间作为人声区间（最准）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use caption timing as speech ranges (most accurate)"
+          }
+        }
+      }
+    },
+    "用本地语音识别为主轨原声生成字幕（免费、离线）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generate captions from the main track audio with on-device speech recognition (free, offline)"
+          }
+        }
+      }
+    },
+    "电影片名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Film Title"
+          }
+        }
+      }
+    },
+    "画面" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transform"
+          }
+        }
+      }
+    },
+    "画面比例" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aspect Ratio"
+          }
+        }
+      }
+    },
+    "稍后处理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        }
+      }
+    },
+    "章节" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapter"
+          }
+        }
+      }
+    },
+    "粘贴调色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste Grade"
+          }
+        }
+      }
+    },
+    "素材" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media"
+          }
+        }
+      }
+    },
+    "经典白字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classic White"
+          }
+        }
+      }
+    },
+    "统计" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stats"
+          }
+        }
+      }
+    },
+    "编码" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codec"
+          }
+        }
+      }
+    },
+    "缩小时间线" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom Out Timeline"
+          }
+        }
+      }
+    },
+    "缩放" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scale"
+          }
+        }
+      }
+    },
+    "缩放时间线：触控板捏合，或按住 ⌘ / ⌥ 滚动滚轮" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom the timeline: pinch on the trackpad, or scroll while holding ⌘ / ⌥"
+          }
+        }
+      }
+    },
+    "背景" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background"
+          }
+        }
+      }
+    },
+    "自然饱和度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vibrance"
+          }
+        }
+      }
+    },
+    "色彩" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        }
+      }
+    },
+    "色温" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperature"
+          }
+        }
+      }
+    },
+    "色相" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hue"
+          }
+        }
+      }
+    },
+    "色调" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tint"
+          }
+        }
+      }
+    },
+    "苹方 常规" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PingFang Regular"
+          }
+        }
+      }
+    },
+    "苹方 粗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PingFang Bold"
+          }
+        }
+      }
+    },
+    "视频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video"
+          }
+        }
+      }
+    },
+    "视频原声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video Audio"
+          }
+        }
+      }
+    },
+    "视频已导出，但字幕文件写入失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video was exported, but the caption file couldn’t be written: %@"
+          }
+        }
+      }
+    },
+    "视频里说的语言。指定语言比自动检测更准" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The language spoken in the video. Choosing it is more accurate than auto-detect"
+          }
+        }
+      }
+    },
+    "识别" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribe"
+          }
+        }
+      }
+    },
+    "识别字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribe"
+          }
+        }
+      }
+    },
+    "识别结果会替换当前的 %lld 条字幕（可撤销）。" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The result will replace the current %lld caption (can be undone)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The result will replace the current %lld captions (can be undone)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "识别视频里录到的声音，包括分离到音频轨上的原声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribe sound recorded in the video, including original audio detached to audio tracks"
+          }
+        }
+      }
+    },
+    "识别音频轨里的声音（配乐、旁白录音）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribe audio tracks (music, voiceover recordings)"
+          }
+        }
+      }
+    },
+    "语音模型已下载 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech model downloaded · %@"
+          }
+        }
+      }
+    },
+    "调低到" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lower To"
+          }
+        }
+      }
+    },
+    "调好一个片段后点「保存当前调色」，下次一键套用。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After grading a clip, click “Save Current Grade” to reuse it with one click."
+          }
+        }
+      }
+    },
+    "调整画面中%@色的部分，如天空用蓝、肤色用橙、草地用绿。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjusts the %@ parts of the image, e.g. blue for sky, orange for skin, green for grass."
+          }
+        }
+      }
+    },
+    "调色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grade"
+          }
+        }
+      }
+    },
+    "调节" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust"
+          }
+        }
+      }
+    },
+    "谢谢观看" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thanks for Watching"
+          }
+        }
+      }
+    },
+    "轨道音量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Track Volume"
+          }
+        }
+      }
+    },
+    "转为普通视频：高光平滑压缩，不会过曝，适合不支持 HDR 的平台。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Converts to standard video: highlights roll off smoothly without clipping. For platforms without HDR support."
+          }
+        }
+      }
+    },
+    "转场" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transitions"
+          }
+        }
+      }
+    },
+    "转场：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transition: %@"
+          }
+        }
+      }
+    },
+    "输入字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a caption"
+          }
+        }
+      }
+    },
+    "输入文字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type text"
+          }
+        }
+      }
+    },
+    "输出 %lld×%lld · 约 %lld Mbps · 时长 %@ · 无水印" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Output %lld×%lld · about %lld Mbps · %@ · no watermark"
+          }
+        }
+      }
+    },
+    "返回首页" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to Home"
+          }
+        }
+      }
+    },
+    "还没有人声区间。可以按字幕或声音生成，再在时间线「人声」行里拖动调整；也可以手动添加。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No speech ranges yet. Create them from captions or audio, then drag them in the Speech row on the timeline, or add them by hand."
+          }
+        }
+      }
+    },
+    "还没有字幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No captions yet"
+          }
+        }
+      }
+    },
+    "还没有字幕。\n点击「识别字幕」自动生成，\n或「添加」手动输入。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No captions yet.\nClick “Transcribe” to generate them,\nor “Add” to type them."
+          }
+        }
+      }
+    },
+    "还没有项目，点击「开始创作」新建一个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No projects yet. Click “Start Creating” to make one"
+          }
+        }
+      }
+    },
+    "这些文件可能被移动或删除。重新定位后即可继续编辑。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These files may have been moved or deleted. Locate them to keep editing."
+          }
+        }
+      }
+    },
+    "这段视频没有声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This video has no sound"
+          }
+        }
+      }
+    },
+    "速度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed"
+          }
+        }
+      }
+    },
+    "释放约 %@ 磁盘空间，已生成的字幕不受影响。下次识别字幕时会重新下载。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frees about %@ of disk space. Existing captions are not affected. It downloads again the next time you transcribe."
+          }
+        }
+      }
+    },
+    "重做" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        }
+      }
+    },
+    "重命名…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename…"
+          }
+        }
+      }
+    },
+    "重命名预设" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Preset"
+          }
+        }
+      }
+    },
+    "重新定位…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locate…"
+          }
+        }
+      }
+    },
+    "重新定位：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locate: %@"
+          }
+        }
+      }
+    },
+    "重新识别并替换" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribe and Replace"
+          }
+        }
+      }
+    },
+    "重置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset"
+          }
+        }
+      }
+    },
+    "锐化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharpen"
+          }
+        }
+      }
+    },
+    "阴影" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shadows"
+          }
+        }
+      }
+    },
+    "静音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute"
+          }
+        }
+      }
+    },
+    "音量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume"
+          }
+        }
+      }
+    },
+    "音频" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio"
+          }
+        }
+      }
+    },
+    "音频轨" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Tracks"
+          }
+        }
+      }
+    },
+    "音频轨 %lld · %@ – %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Track %lld · %@ – %@"
+          }
+        }
+      }
+    },
+    "音频轨 %lld（整条轨）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio Track %lld (whole track)"
+          }
+        }
+      }
+    },
+    "预设保存失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save the preset: %@"
+          }
+        }
+      }
+    },
+    "风格：%@（在左侧「滤镜」中选择）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look: %@ (choose in Filters on the left)"
+          }
+        }
+      }
+    },
+    "饱和度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturation"
+          }
+        }
+      }
+    },
+    "首次使用，正在下载识别模型…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading the speech model for first use…"
+          }
+        }
+      }
+    },
+    "首次识别需下载约 %lld MB 语音模型" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first transcription downloads a speech model of about %lld MB"
+          }
+        }
+      }
+    },
+    "高光" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highlights"
+          }
+        }
+      }
+    },
+    "高级设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advanced"
+          }
+        }
+      }
+    },
+    "黄字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yellow"
+          }
+        }
+      }
+    },
+    "黑体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heiti"
+          }
+        }
+      }
+    },
+    "黑底白字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White on Black"
+          }
+        }
+      }
+    },
+    "默认文字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plain"
+          }
+        }
+      }
+    },
+    "；" : {
+      "comment" : "两句提示之间的分隔符",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "; "
+          }
+        }
+      }
+    },
+    "📍 京都 · 岚山" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "📍 Kyoto · Arashiyama"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

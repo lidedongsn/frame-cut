@@ -108,6 +108,7 @@ make run-release   # 构建并打开发布版（日常使用推荐）
 make test          # 单元测试（首次会用 ffmpeg 生成测试素材到 TestMedia/）
 make check         # 提交前检查：测试 + 构建
 make dmg           # 打包安装包 build/FrameCut-<版本>.dmg，可直接发给别人
+make strings       # 改了界面文字后，把新文案同步进翻译文件（*.xcstrings）
 make help          # 全部命令
 ```
 

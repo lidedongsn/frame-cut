@@ -35,11 +35,11 @@ struct InspectorPanel: View {
 }
 
 struct InspectorHeader: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
 
     var body: some View {
-        Label(title, systemImage: icon)
+        Label { Text(title) } icon: { Image(systemName: icon).latinSymbol() }
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(Theme.text)
     }
@@ -57,10 +57,10 @@ private struct ProjectInspector: View {
     private var colorModeHint: String {
         switch model.project.colorMode {
         case .hdr:
-            let screen = screenSupportsHDR ? "当前屏幕支持 HDR 预览。" : "当前屏幕不支持 HDR，预览会自动压缩亮度，导出不受影响。"
-            return "保留 HDR 素材的高光与色彩，可导出 HDR（HLG / HDR10）或 SDR。" + screen
+            let screen = screenSupportsHDR ? String(localized: "当前屏幕支持 HDR 预览。") : String(localized: "当前屏幕不支持 HDR，预览会自动压缩亮度，导出不受影响。")
+            return String(localized: "保留 HDR 素材的高光与色彩，可导出 HDR（HLG / HDR10）或 SDR。") + screen
         case .sdr:
-            return model.project.hasHDRAssets ? "HDR 素材会自动做色调映射，高光平滑压缩而不过曝。" : "普通视频。导入 HDR 素材（如 iPhone 拍摄）时会自动切换为 HDR。"
+            return model.project.hasHDRAssets ? String(localized: "HDR 素材会自动做色调映射，高光平滑压缩而不过曝。") : String(localized: "普通视频。导入 HDR 素材（如 iPhone 拍摄）时会自动切换为 HDR。")
         }
     }
 
@@ -141,10 +141,10 @@ private struct VideoInspector: View {
     private var asset: MediaAsset? { clip.flatMap { model.project.asset(id: $0.assetID) } }
 
     private var detachHelp: String {
-        if asset?.hasAudio == false { return "这段视频没有声音" }
-        if clip.map({ $0.speed != 1 }) == true { return "变速的片段不能分离音频，先把速度调回 1x" }
-        if clip?.muted == true { return "原声已静音或已分离。要重新分离，先取消静音" }
-        return "把原声放到音频轨上单独剪辑、调节，原片段静音。之后移动或修剪画面，音频不会跟着变。"
+        if asset?.hasAudio == false { return String(localized: "这段视频没有声音") }
+        if clip.map({ $0.speed != 1 }) == true { return String(localized: "变速的片段不能分离音频，先把速度调回 1x") }
+        if clip?.muted == true { return String(localized: "原声已静音或已分离。要重新分离，先取消静音") }
+        return String(localized: "把原声放到音频轨上单独剪辑、调节，原片段静音。之后移动或修剪画面，音频不会跟着变。")
     }
 
     var body: some View {
@@ -219,7 +219,7 @@ private struct VideoInspector: View {
                         guard let clip else { return }
                         model.store.perform { $0.trimMain(id: id, sourceIn: clip.sourceIn, sourceOut: clip.sourceIn + Time(seconds: v)) }
                     }
-                ), range: 0.5...15, format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+                ), range: 0.5...15, format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
             }
         }
 
@@ -263,7 +263,7 @@ private struct VideoInspector: View {
                             }
                     }
                     .buttonStyle(.plain)
-                    .help(hslBand == band ? "\(band.displayName)（正在调整）" : band.displayName)
+                    .help(hslBand == band ? String(localized: "\(band.displayName)（正在调整）") : band.displayName)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -276,7 +276,7 @@ private struct VideoInspector: View {
         }
     }
 
-    private func hslSlider(_ title: String, _ kp: WritableKeyPath<HSLAdjust, Double>) -> some View {
+    private func hslSlider(_ title: LocalizedStringKey, _ kp: WritableKeyPath<HSLAdjust, Double>) -> some View {
         let band = hslBand
         let value = Binding<Double>(
             get: { model.project.mainClip(id: id)?.filter.hsl[band]?[keyPath: kp] ?? 0 },
@@ -304,7 +304,7 @@ private struct VideoInspector: View {
         Color(hue: band.hueCenter / 360, saturation: 0.75, brightness: 0.95)
     }
 
-    private func adjust(_ title: String, _ kp: WritableKeyPath<VideoClip, Double>, range: ClosedRange<Double> = -1...1) -> some View {
+    private func adjust(_ title: LocalizedStringKey, _ kp: WritableKeyPath<VideoClip, Double>, range: ClosedRange<Double> = -1...1) -> some View {
         LabeledSlider(title: title, value: model.clipBinding(id, kp, default: 0), range: range,
                       format: { String(format: range.lowerBound < 0 ? "%+.0f" : "%.0f", $0 * 100) }, onEditing: model.coalesce)
     }
@@ -329,9 +329,9 @@ private struct MusicInspector: View {
             LabeledSlider(title: "音量", value: model.musicBinding(id, \.volume, default: 1), range: 0...2,
                           format: { "\(Int($0 * 100))%" }, onEditing: model.coalesce)
             LabeledSlider(title: "淡入", value: model.seconds(model.musicBinding(id, \.fadeIn, default: .zero)), range: 0...5,
-                          format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+                          format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
             LabeledSlider(title: "淡出", value: model.seconds(model.musicBinding(id, \.fadeOut, default: .zero)), range: 0...5,
-                          format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+                          format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
         }
         Text("在时间线上左右拖动调整位置，上下拖动换到其他音频轨；拖动两端可裁剪，⌘B 在播放头处分割。配乐、旁白、音效可以放在不同的轨上同时播放。")
             .font(.system(size: 11)).foregroundStyle(Theme.tertiary)
@@ -371,7 +371,7 @@ private struct TransitionInspector: View {
             LabeledSlider(title: "时长", value: Binding(
                 get: { transition?.duration.seconds ?? 0.5 },
                 set: { v in model.store.perform { $0.transitions[id]?.duration = Time(seconds: v) } }
-            ), range: 0.2...2, format: { String(format: "%.1f 秒", $0) }, onEditing: model.coalesce)
+            ), range: 0.2...2, format: { String(format: String(localized: "%.1f 秒"), $0) }, onEditing: model.coalesce)
             if let effective, let transition, effective < transition.duration {
                 Text("片段较短，实际转场时长为 \(String(format: "%.2f", effective.seconds)) 秒")
                     .font(.system(size: 11)).foregroundStyle(.orange)

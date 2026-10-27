@@ -8,8 +8,8 @@ public enum CompositionError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .empty: "时间线上还没有视频或图片"
-        case .missingAsset(let name): "找不到素材：\(name)"
+        case .empty: String(localized: "时间线上还没有视频或图片", bundle: .module)
+        case .missingAsset(let name): String(localized: "找不到素材：\(name)", bundle: .module)
         }
     }
 }
